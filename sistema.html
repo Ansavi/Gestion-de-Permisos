@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema de Gestión de Accesos MVCLM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy: #1F3A5C;
+    --navy-dark: #16293F;
+    --paper: #F3F4F1;
+    --panel: #FFFFFF;
+    --line: #DCDED8;
+    --ink: #1B1F23;
+    --ink-soft: #565C5F;
+    --gold: #B0872E;
+    --gold-soft: #EFE3C4;
+    --ok: #3A7D5C;
+    --ok-soft: #E2EFE8;
+    --warn: #B23A32;
+    --warn-soft: #F6E2E0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans', sans-serif;font-size:14px;line-height:1.5;}
+  h1,h2,h3{font-family:'Source Serif 4', serif;margin:0;color:var(--navy-dark);font-weight:600;}
+  .app{display:grid;grid-template-columns:240px 1fr;min-height:100vh;}
+
+  /* SIDEBAR */
+  .sidebar{background:var(--navy);color:#EDEFEA;padding:28px 0 20px;display:flex;flex-direction:column;}
+  .brand{padding:0 24px 24px;border-bottom:1px solid rgba(255,255,255,0.14);margin-bottom:18px;}
+  .brand .seal{width:38px;height:38px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Source Serif 4',serif;font-weight:700;color:var(--navy-dark);margin-bottom:10px;}
+  .brand .name{font-family:'Source Serif 4',serif;font-size:16px;color:#fff;line-height:1.3;}
+  .brand .sub{font-size:11.5px;color:#B7C2CE;margin-top:2px;letter-spacing:.2px;}
+  nav{display:flex;flex-direction:column;gap:2px;padding:0 12px;}
+  .navitem{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:6px;color:#C7D0D9;text-decoration:none;font-size:13.5px;cursor:pointer;border:1px solid transparent;}
+  .navitem svg{width:16px;height:16px;flex:none;opacity:.85;}
+  .navitem:hover{background:rgba(255,255,255,0.06);color:#fff;}
+  .navitem.active{background:var(--navy-dark);color:#fff;border-color:rgba(176,135,46,.5);}
+  .navitem.active svg{opacity:1;color:var(--gold);}
+  .sidebar-foot{margin-top:auto;padding:16px 24px 0;border-top:1px solid rgba(255,255,255,0.14);font-size:11.5px;color:#9AA6B0;}
+
+  /* MAIN */
+  main{padding:26px 32px 40px;max-width:1180px;display:flex;flex-direction:column;min-height:100vh;}
+  .content{flex:1;}
+  .topbar{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+  .crumb{font-size:12px;color:var(--ink-soft);margin-bottom:4px;}
+  .topbar h1{font-size:23px;}
+  .userchip{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);padding:7px 12px;border-radius:20px;font-size:12.5px;color:var(--ink-soft);}
+  .userchip b{color:var(--ink);}
+
+  .grid{display:grid;grid-template-columns:1.55fr 1fr;gap:22px;align-items:start;}
+  @media (max-width:980px){.grid{grid-template-columns:1fr;} .app{grid-template-columns:1fr;} .sidebar{display:none;}}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:22px 24px;}
+  .card + .card{margin-top:18px;}
+  .card h2{font-size:16px;margin-bottom:2px;}
+  .card .hint{font-size:12px;color:var(--ink-soft);margin-bottom:16px;}
+
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+  .field label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:5px;font-weight:500;}
+  .field input, .field select{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:6px;font-size:13.5px;font-family:inherit;color:var(--ink);background:#FBFBFA;}
+  .field input[readonly]{background:#EEEFEA;color:var(--ink-soft);}
+  .field input:focus, .field select:focus{outline:2px solid var(--navy);outline-offset:1px;border-color:var(--navy);}
+  .field .msg{font-size:11.5px;margin-top:5px;display:none;}
+  .field.error input{border-color:var(--warn);background:var(--warn-soft);}
+  .field.error .msg.error{display:block;color:var(--warn);}
+  .field.ok input{border-color:var(--ok);}
+  .field.ok .msg.ok{display:block;color:var(--ok);}
+
+  .filebox{border:1.5px dashed var(--line);border-radius:8px;padding:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:#FBFBFA;}
+  .filebox .fname{font-size:12.5px;color:var(--ink-soft);}
+  .btn{border:none;border-radius:6px;padding:9px 16px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;}
+  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink);}
+  .btn-ghost:hover{border-color:var(--navy);}
+  .btn-primary{background:var(--navy);color:#fff;}
+  .btn-primary:hover{background:var(--navy-dark);}
+  .btn-gold{background:var(--gold);color:#2A1F00;}
+  .btn-gold:hover{filter:brightness(0.95);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  .btn-sm{padding:6px 12px;font-size:12px;}
+
+  .req-list{display:flex;flex-direction:column;border-top:1px solid var(--line);}
+  .req-row{display:flex;align-items:center;gap:10px;padding:11px 2px;border-bottom:1px solid var(--line);font-size:13.5px;}
+  .req-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--navy);}
+
+  .mgmt-list{display:flex;flex-direction:column;border-top:1px solid var(--line);}
+  .mgmt-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 2px;border-bottom:1px solid var(--line);}
+  .mgmt-row .left{display:flex;flex-direction:column;gap:2px;}
+  .mgmt-row .name{font-size:13.5px;font-weight:500;}
+  .mgmt-row .weight{font-size:11px;color:var(--ink-soft);}
+  .mgmt-row select{padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:12.5px;font-family:inherit;background:#FBFBFA;}
+
+  .progress-wrap{margin:14px 0 4px;}
+  .progress-top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;color:var(--ink-soft);}
+  .progress-top b{color:var(--navy-dark);font-size:15px;font-family:'Source Serif 4',serif;}
+  .progress-track{height:8px;background:#E7E8E3;border-radius:20px;overflow:hidden;}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--navy),var(--gold));width:0%;transition:width .35s ease;}
+
+  .formfoot{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid var(--line);}
+
+  .audit-item{display:flex;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);}
+  .audit-item:last-child{border-bottom:none;}
+  .audit-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);margin-top:5px;flex:none;}
+  .audit-body b{font-size:13px;}
+  .audit-meta{font-size:11.5px;color:var(--ink-soft);margin-top:2px;}
+
+  .queue-item{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;font-size:12.5px;cursor:pointer;}
+  .queue-item.selected{border-color:var(--navy);background:#F3F6FA;}
+  .queue-item .badge{font-size:10.5px;padding:2px 8px;border-radius:20px;background:var(--gold-soft);color:#7A5D1E;font-weight:500;}
+
+  .lockednote{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-soft);background:#F0F1EC;border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:14px;}
+  .lockednote svg{width:15px;height:15px;flex:none;}
+
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--navy-dark);color:#fff;padding:13px 18px;border-radius:8px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.25);display:flex;align-items:center;gap:10px;transform:translateY(20px);opacity:0;pointer-events:none;transition:all .3s ease;z-index:50;}
+  .toast.show{transform:translateY(0);opacity:1;}
+  .toast .dot{width:8px;height:8px;border-radius:50%;background:var(--gold);}
+
+  .view{display:none;}
+  .view.active{display:block;}
+  .adminsub{display:none;}
+  .adminsub.active{display:block;}
+
+  footer.sysfoot{
+    margin-top:30px;padding-top:16px;border-top:1px solid var(--line);
+    font-size:11px;color:var(--ink-soft);text-align:center;line-height:1.6;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="seal">GA</div>
+      <div class="name">Gestión de Accesos</div>
+      <div class="sub">Sedes Carabayllo · Independencia</div>
+    </div>
+    <nav id="mainNav">
+      <a class="navitem" id="navDashboard" data-roles="admin,it" onclick="goTo('dashboard')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Dashboard</a>
+      <a class="navitem" id="navNueva" data-roles="admin" onclick="goTo('admin-form')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Nueva solicitud</a>
+      <a class="navitem" id="navGestion" data-roles="admin" onclick="goTo('admin-list')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Gestión de solicitudes</a>
+      <a class="navitem" id="navAccesos" data-roles="it" onclick="goTo('it')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 12l2 2 4-4"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>Gestión de accesos</a>
+      <a class="navitem" id="navUsuarios" data-roles="it" onclick="goTo('usuarios')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3"/><path d="M4 20c0-3.5 3.5-6 8-6s8 2.5 8 6"/></svg>Usuarios</a>
+      <a class="navitem" id="navMantenimiento" data-roles="it" onclick="goTo('mantenimiento')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 4v5c0 5-3.5 7.5-8 9-4.5-1.5-8-4-8-9V7l8-4z"/></svg>Mantenimiento</a>
+      <a class="navitem" id="navReportes" data-roles="admin,it" onclick="goTo('reportes')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 17v-6M13 17V9M17 17v-3"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>Reportes</a>
+      <a class="navitem" id="navAuditoria" data-roles="it" onclick="goTo('auditoria')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 10h16M4 14h10M4 18h6"/></svg>Auditoría</a>
+    </nav>
+    <div class="sidebar-foot">
+      <div id="sesionInfo" style="margin-bottom:8px;">Conectado como <b id="sesionArea" style="color:#fff;"></b></div>
+      <a href="#" id="navLogout" style="color:#E7B8B4;text-decoration:none;" onclick="cerrarSesion();return false;">Cerrar sesión</a>
+    </div>
+  </aside>
+
+  <main>
+  <div class="content">
+    <div class="topbar">
+      <div>
+        <div class="crumb" id="crumb">Panel</div>
+        <h1 id="pageTitle">Cargando…</h1>
+      </div>
+      <div class="userchip" id="userchip">Sesión: <b></b></div>
+    </div>
+
+    <!-- ============ VISTA ADMINISTRACIÓN ============ -->
+    <div class="view" id="view-admin">
+
+      <div class="adminsub active" id="admin-sub-form">
+      <div class="grid">
+        <div>
+          <div class="card">
+            <h2>Datos de la resolución</h2>
+            <div class="hint">Documento que sustenta el alta del usuario.</div>
+            <div class="row">
+              <div class="field"><label>N° de resolución</label><input type="text" id="resolucionInput" placeholder="RESOL-2026-0142"></div>
+              <div class="field"><label>Fecha de resolución</label><input type="date" id="fechaResolucion"></div>
+            </div>
+            <div class="row">
+              <div class="field"><label>Fecha de solicitud</label><input type="date" id="fechaSolicitud" readonly placeholder="Se registra al notificar"></div>
+              <div class="field"><label>Sede</label><select id="sedeInput"><option>Carabayllo</option><option>Independencia</option></select></div>
+            </div>
+            <div class="field">
+              <label>Documento adjunto (PDF)</label>
+              <div class="filebox">
+                <span class="fname" id="fname">Ningún archivo seleccionado</span>
+                <label class="btn btn-ghost" style="margin:0;">Adjuntar PDF<input type="file" accept="application/pdf" id="fileInput" style="display:none;"></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Datos del usuario</h2>
+            <div class="hint">El DNI se valida contra los registros existentes para evitar duplicados.</div>
+            <div class="row">
+              <div class="field" id="dniField">
+                <label>DNI</label>
+                <input type="text" id="dniInput" maxlength="8" placeholder="Ej. 07452136">
+                <div class="msg error" id="dniErrorMsg">Este DNI ya tiene un usuario registrado.</div>
+                <div class="msg ok" id="dniOkMsg">DNI disponible.</div>
+              </div>
+              <div class="field">
+                <label>Perfil</label>
+                <select id="perfilInput"><option>ADMINISTRADOR</option><option>ANALISTA</option><option>ASISTENTE</option><option>AUXILIAR</option><option>COORDINADOR</option><option>ESPECIALISTA</option><option>JUEZ</option><option>SECRETARIO</option><option>SESIGRISTA</option></select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="field" id="apellidosField"><label>Apellidos</label><input type="text" id="apellidosInput" placeholder="Solo letras"><div class="msg error">No se permiten números.</div></div>
+              <div class="field" id="nombresField"><label>Nombres</label><input type="text" id="nombresInput" placeholder="Solo letras"><div class="msg error">No se permiten números.</div></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>¿Qué accesos requiere?</h2>
+            <div class="hint">Marca únicamente los accesos que este usuario necesita. Informática se encargará de habilitarlos.</div>
+            <div class="req-list" id="reqList">
+              <label class="req-row"><input type="checkbox" class="req-check" checked data-name="Usuario de red"> Usuario de red</label>
+              <label class="req-row"><input type="checkbox" class="req-check" checked data-name="Correo electrónico corporativo"> Correo electrónico corporativo</label>
+              <label class="req-row"><input type="checkbox" class="req-check" data-name="Sistema de Expedientes (SIJ)"> Sistema de Expedientes (SIJ)</label>
+              <label class="req-row"><input type="checkbox" class="req-check" data-name="Certificado electrónico"> Certificado electrónico</label>
+              <label class="req-row"><input type="checkbox" class="req-check" data-name="WhatsApp Web"> WhatsApp Web</label>
+              <label class="req-row"><input type="checkbox" class="req-check" checked data-name="VPN 24Hrs"> VPN 24Hrs</label>
+              <label class="req-row"><input type="checkbox" class="req-check" data-name="Amauta Pro"> Amauta Pro</label>
+              <label class="req-row"><input type="checkbox" class="req-check" data-name="RENIEC"> RENIEC</label>
+            </div>
+            <div class="formfoot">
+              <button class="btn btn-ghost">Guardar borrador</button>
+              <button class="btn btn-gold" id="notifyBtn">Notificar a Informática</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <h2>Avance de la solicitud</h2>
+            <div class="progress-wrap">
+              <div class="progress-top"><span>Avance general</span><b id="progressLabelAdmin">0%</b></div>
+              <div class="progress-track"><div class="progress-fill" id="progressFillAdmin"></div></div>
+            </div>
+            <div class="lockednote">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+              El detalle de gestión (qué área lo está atendiendo, en qué etapa está cada acceso) es interno de Informática y no se muestra aquí.
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Seguimiento</h2>
+            <div class="hint">Solo eventos visibles para el solicitante.</div>
+            <div id="auditLogAdmin">
+              <div class="audit-item"><div class="audit-dot"></div><div class="audit-body"><b>Solicitud creada</b><div class="audit-meta">Mesa de Partes — Administración · hoy, 09:14</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div><!-- /admin-sub-form -->
+
+      <div class="adminsub" id="admin-sub-list">
+        <div class="card">
+          <h2>Mis solicitudes registradas</h2>
+          <div class="hint">Aquí ves el avance general de cada solicitud que registraste. El detalle de qué está gestionando Informática internamente no se muestra en esta vista.</div>
+
+          <div class="row" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:18px;">
+            <div class="field"><label>Sede</label><select><option>Todas</option><option>Carabayllo</option><option>Independencia</option></select></div>
+            <div class="field"><label>Estado</label><select><option>Todos</option><option>Pendiente</option><option>En proceso</option><option>Completado</option></select></div>
+            <div class="field"><label>Buscar por DNI o apellido</label><input type="text" placeholder="Ej. 07452136 / Pérez"></div>
+          </div>
+
+          <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+            <thead>
+              <tr style="text-align:left;border-bottom:1px solid var(--line);color:var(--ink-soft);">
+                <th style="padding:8px 6px;">Resolución</th>
+                <th style="padding:8px 6px;">Fecha solicitud</th>
+                <th style="padding:8px 6px;">DNI</th>
+                <th style="padding:8px 6px;">Apellidos y nombres</th>
+                <th style="padding:8px 6px;">Perfil</th>
+                <th style="padding:8px 6px;">Sede</th>
+                <th style="padding:8px 6px;width:140px;">Avance</th>
+                <th style="padding:8px 6px;"></th>
+              </tr>
+            </thead>
+            <tbody id="tablaMisSolicitudes">
+              <tr style="border-bottom:1px solid var(--line);">
+                <td style="padding:10px 6px;">RESOL-2026-0142</td><td style="padding:10px 6px;">03/09/2026</td><td style="padding:10px 6px;">07452136</td>
+                <td style="padding:10px 6px;">Pérez Ramírez, Juan</td><td style="padding:10px 6px;">ANALISTA</td><td style="padding:10px 6px;">Carabayllo</td>
+                <td style="padding:10px 6px;">
+                  <div class="progress-track" style="height:6px;"><div class="progress-fill" style="width:55%;"></div></div>
+                  <span style="font-size:11px;color:var(--ink-soft);">55%</span>
+                </td>
+                <td style="padding:10px 6px;"><button class="btn btn-ghost btn-sm" onclick="toggleDetalle('det1')">Ver avance</button></td>
+              </tr>
+              <tr id="det1" style="display:none;background:#FAFAF7;">
+                <td colspan="8" style="padding:12px 16px;">
+                  <div class="lockednote" style="margin-top:0;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                    Avance general: 55%. El detalle por sistema es gestionado internamente por Informática.
+                  </div>
+                </td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--line);">
+                <td style="padding:10px 6px;">RESOL-2026-0139</td><td style="padding:10px 6px;">01/09/2026</td><td style="padding:10px 6px;">41209988</td>
+                <td style="padding:10px 6px;">Quispe Torres, Ana</td><td style="padding:10px 6px;">SECRETARIO</td><td style="padding:10px 6px;">Independencia</td>
+                <td style="padding:10px 6px;">
+                  <div class="progress-track" style="height:6px;"><div class="progress-fill" style="width:100%;"></div></div>
+                  <span style="font-size:11px;color:var(--ok);">100% · Completado</span>
+                </td>
+                <td style="padding:10px 6px;"><button class="btn btn-ghost btn-sm" onclick="toggleDetalle('det2')">Ver avance</button></td>
+              </tr>
+              <tr id="det2" style="display:none;background:#FAFAF7;">
+                <td colspan="8" style="padding:12px 16px;">
+                  <div class="lockednote" style="margin-top:0;background:var(--ok-soft);border-color:#BFDBCB;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 13l4 4L19 7"/></svg>
+                    Solicitud completada. Todos los accesos requeridos fueron habilitados.
+                  </div>
+                </td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--line);">
+                <td style="padding:10px 6px;">RESOL-2026-0135</td><td style="padding:10px 6px;">28/08/2026</td><td style="padding:10px 6px;">10023344</td>
+                <td style="padding:10px 6px;">Rojas Medina, Luis</td><td style="padding:10px 6px;">JUEZ</td><td style="padding:10px 6px;">Carabayllo</td>
+                <td style="padding:10px 6px;">
+                  <div class="progress-track" style="height:6px;"><div class="progress-fill" style="width:15%;"></div></div>
+                  <span style="font-size:11px;color:var(--ink-soft);">15%</span>
+                </td>
+                <td style="padding:10px 6px;"><button class="btn btn-ghost btn-sm" onclick="toggleDetalle('det3')">Ver avance</button></td>
+              </tr>
+              <tr id="det3" style="display:none;background:#FAFAF7;">
+                <td colspan="8" style="padding:12px 16px;">
+                  <div class="lockednote" style="margin-top:0;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                    Avance general: 15%. El detalle por sistema es gestionado internamente por Informática.
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div><!-- /admin-sub-list -->
+
+    </div>
+
+    <!-- ============ VISTA INFORMÁTICA (INTERNA) ============ -->
+    <div class="view" id="view-it">
+      <div class="grid">
+        <div>
+          <div class="card">
+            <h2>Bandeja de solicitudes</h2>
+            <div class="hint">Solicitudes notificadas pendientes de gestión.</div>
+            <div class="queue-item selected"><span>RESOL-2026-0142 · Pérez Ramírez, Juan</span><span class="badge">En proceso</span></div>
+            <div class="queue-item"><span>RESOL-2026-0139 · Quispe Torres, Ana</span><span class="badge">Nuevo</span></div>
+            <div class="queue-item"><span>RESOL-2026-0135 · Rojas Medina, Luis</span><span class="badge">Nuevo</span></div>
+          </div>
+
+          <div class="card">
+            <h2>Accesos solicitados — RESOL-2026-0142</h2>
+            <div class="hint">Solo aparecen los accesos que Administración marcó como requeridos. Actualiza el estado conforme avanzas.</div>
+            <div class="mgmt-list" id="mgmtList">
+              <!-- generado por JS a partir de lo marcado en la vista Administración -->
+            </div>
+            <div class="formfoot">
+              <button class="btn btn-primary" id="saveProgressBtn">Guardar avance</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <h2>Avance calculado</h2>
+            <div class="progress-wrap">
+              <div class="progress-top"><span>Avance general</span><b id="progressLabelIT">0%</b></div>
+              <div class="progress-track"><div class="progress-fill" id="progressFillIT"></div></div>
+            </div>
+            <div class="hint" style="margin-top:10px;margin-bottom:0;">Se calcula como el promedio de la etapa de cada acceso, según Mantenimiento_Estados_Progreso.</div>
+          </div>
+
+          <div class="card">
+            <h2>Historial interno</h2>
+            <div class="hint">Todas las acciones, visibles solo para Informática.</div>
+            <div id="auditLogIT">
+              <div class="audit-item"><div class="audit-dot"></div><div class="audit-body"><b>Solicitud notificada por Administración</b><div class="audit-meta">Mesa de Partes · hoy, 09:14</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ VISTA USUARIOS ============ -->
+    <div class="view" id="view-usuarios">
+      <div class="grid">
+        <div>
+          <div class="card">
+            <h2>Usuarios del sistema (Credenciales)</h2>
+            <div class="hint">Personal de Administración e Informática con acceso a esta herramienta, todos con usuario y contraseña propios. El campo <b>Área</b> determina qué opciones del menú se habilitan al iniciar sesión. El restablecimiento genera una clave temporal de un solo uso; nunca se guarda ni se reutiliza la anterior.</div>
+            <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+              <thead>
+                <tr style="text-align:left;border-bottom:1px solid var(--line);color:var(--ink-soft);">
+                  <th style="padding:8px 6px;">Nombres</th>
+                  <th style="padding:8px 6px;">Apellidos</th>
+                  <th style="padding:8px 6px;">DNI</th>
+                  <th style="padding:8px 6px;">Cargo</th>
+                  <th style="padding:8px 6px;">Área</th>
+                  <th style="padding:8px 6px;">Usuario</th>
+                  <th style="padding:8px 6px;">Estado</th>
+                  <th style="padding:8px 6px;"></th>
+                </tr>
+              </thead>
+              <tbody id="tablaUsuarios">
+                <tr style="border-bottom:1px solid var(--line);">
+                  <td style="padding:8px 6px;">María</td><td style="padding:8px 6px;">Vargas Soto</td><td style="padding:8px 6px;">45231098</td>
+                  <td style="padding:8px 6px;">Mesa de Partes</td><td style="padding:8px 6px;">Administración</td><td style="padding:8px 6px;">mvargas</td>
+                  <td style="padding:8px 6px;"><span style="background:var(--ok-soft);color:var(--ok);padding:3px 9px;border-radius:20px;">Activo</span></td>
+                  <td style="padding:8px 6px;"><button class="btn btn-ghost btn-sm" onclick="restablecerClave(this,'mvargas')">Restablecer clave</button></td>
+                </tr>
+                <tr style="border-bottom:1px solid var(--line);">
+                  <td style="padding:8px 6px;">Rosa</td><td style="padding:8px 6px;">Fernández Díaz</td><td style="padding:8px 6px;">48815520</td>
+                  <td style="padding:8px 6px;">Asistente Administrativo</td><td style="padding:8px 6px;">Administración</td><td style="padding:8px 6px;">rfernandez</td>
+                  <td style="padding:8px 6px;"><span style="background:var(--ok-soft);color:var(--ok);padding:3px 9px;border-radius:20px;">Activo</span></td>
+                  <td style="padding:8px 6px;"><button class="btn btn-ghost btn-sm" onclick="restablecerClave(this,'rfernandez')">Restablecer clave</button></td>
+                </tr>
+                <tr style="border-bottom:1px solid var(--line);">
+                  <td style="padding:8px 6px;">Carlos</td><td style="padding:8px 6px;">Injante Ruiz</td><td style="padding:8px 6px;">40118822</td>
+                  <td style="padding:8px 6px;">Analista de Sistemas</td><td style="padding:8px 6px;">Informática</td><td style="padding:8px 6px;">cinjante</td>
+                  <td style="padding:8px 6px;"><span style="background:var(--ok-soft);color:var(--ok);padding:3px 9px;border-radius:20px;">Activo</span></td>
+                  <td style="padding:8px 6px;"><button class="btn btn-ghost btn-sm" onclick="restablecerClave(this,'cinjante')">Restablecer clave</button></td>
+                </tr>
+              </tbody>
+            </table>
+            <div id="credBoxLogin" style="display:none;margin-top:12px;padding:12px 14px;background:var(--gold-soft);border:1px solid #DCC581;border-radius:8px;font-size:12.5px;"></div>
+            <div class="formfoot">
+              <button class="btn btn-primary">+ Nuevo usuario del sistema</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <h2>Historial de accesos y claves</h2>
+            <div class="hint">Solo queda registrada la acción, nunca la contraseña.</div>
+            <div id="auditLogLogin">
+              <div class="audit-item"><div class="audit-dot"></div><div class="audit-body"><b>Usuario cinjante creado (Área: Informática)</b><div class="audit-meta">Administrador del sistema · ayer, 16:40</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ VISTA DASHBOARD ============ -->
+    <div class="view" id="view-dashboard">
+      <div class="row" style="grid-template-columns:repeat(4,1fr);">
+        <div class="card"><div class="hint" style="margin-bottom:6px;">Pendientes</div><h2 style="font-size:26px;">7</h2></div>
+        <div class="card"><div class="hint" style="margin-bottom:6px;">En proceso</div><h2 style="font-size:26px;">12</h2></div>
+        <div class="card"><div class="hint" style="margin-bottom:6px;">Completadas (mes)</div><h2 style="font-size:26px;">34</h2></div>
+        <div class="card"><div class="hint" style="margin-bottom:6px;">Total solicitudes</div><h2 style="font-size:26px;">53</h2></div>
+      </div>
+      <div class="card">
+        <h2>Solicitudes por sede</h2>
+        <div class="hint">Vista resumen — el detalle completo está en Gestión de solicitudes / Gestión de accesos según tu área.</div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;"><span>Carabayllo</span><span style="color:var(--ink-soft);">31 solicitudes</span></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;"><span>Independencia</span><span style="color:var(--ink-soft);">22 solicitudes</span></div>
+      </div>
+    </div>
+
+    <!-- ============ VISTA MAESTROS ============ -->
+    <div class="view" id="view-mantenimiento">
+      <div class="grid" style="grid-template-columns:1fr 1fr;">
+        <div class="card">
+          <h2>Sedes</h2>
+          <div class="hint">Nuevo / Editar / Bloquear.</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);"><span>Carabayllo</span><button class="btn btn-ghost btn-sm">Editar</button></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);"><span>Independencia</span><button class="btn btn-ghost btn-sm">Editar</button></div>
+          <div class="formfoot"><button class="btn btn-primary btn-sm">+ Nueva sede</button></div>
+        </div>
+        <div class="card">
+          <h2>Perfiles</h2>
+          <div class="hint">Nuevo / Editar / Bloquear.</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);"><span>ADMINISTRADOR</span><button class="btn btn-ghost btn-sm">Editar</button></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);"><span>JUEZ</span><button class="btn btn-ghost btn-sm">Editar</button></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);"><span>SECRETARIO</span><button class="btn btn-ghost btn-sm">Editar</button></div>
+          <div class="formfoot"><button class="btn btn-primary btn-sm">+ Nuevo perfil</button></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Sistemas</h2>
+        <div class="hint">Nuevo / Editar / Activar / Inactivar. Un sistema Inactivo deja de aparecer en "¿Qué accesos requiere?" de Administración, pero el historial de solicitudes que ya lo usaron no se altera.</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);">
+          <span>Correo electrónico corporativo</span>
+          <span><span style="background:var(--ok-soft);color:var(--ok);padding:3px 9px;border-radius:20px;font-size:11px;margin-right:8px;">Activo</span><button class="btn btn-ghost btn-sm">Editar</button> <button class="btn btn-ghost btn-sm">Inactivar</button></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);">
+          <span>VPN 24Hrs</span>
+          <span><span style="background:var(--ok-soft);color:var(--ok);padding:3px 9px;border-radius:20px;font-size:11px;margin-right:8px;">Activo</span><button class="btn btn-ghost btn-sm">Editar</button> <button class="btn btn-ghost btn-sm">Inactivar</button></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);">
+          <span>Sistema de Expedientes (SIJ)</span>
+          <span><span style="background:var(--ok-soft);color:var(--ok);padding:3px 9px;border-radius:20px;font-size:11px;margin-right:8px;">Activo</span><button class="btn btn-ghost btn-sm">Editar</button> <button class="btn btn-ghost btn-sm">Inactivar</button></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);">
+          <span>Amauta Pro</span>
+          <span><span style="background:#EEE;color:var(--ink-soft);padding:3px 9px;border-radius:20px;font-size:11px;margin-right:8px;">Inactivo</span><button class="btn btn-ghost btn-sm">Editar</button> <button class="btn btn-gold btn-sm">Activar</button></span>
+        </div>
+        <div class="formfoot"><button class="btn btn-primary btn-sm">+ Nuevo sistema</button></div>
+      </div>
+
+      <div class="card">
+        <h2>Plantillas de documentos</h2>
+        <div class="hint">Cada plantilla es un Google Doc con marcadores ({{NOMBRES}}, {{DNI}}, etc.) asociado a un sistema. El enlace abre el documento base para editar su formato; el botón "Generar documento" que ve Informática en cada solicitud usa esta misma plantilla.</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);">
+          <span>
+            <a href="#" style="color:var(--navy);text-decoration:none;font-weight:500;">Oficio RENIEC — Consulta de menores</a>
+            <span style="color:var(--ink-soft);font-size:12px;"> · Sistema: RENIEC</span>
+          </span>
+          <span><span style="background:var(--ok-soft);color:var(--ok);padding:3px 9px;border-radius:20px;font-size:11px;margin-right:8px;">Activo</span><button class="btn btn-ghost btn-sm">Editar</button> <button class="btn btn-ghost btn-sm">Inactivar</button></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);">
+          <span>
+            <a href="#" style="color:var(--navy);text-decoration:none;font-weight:500;">Oficio Certificado Electrónico — Solicitud RENIEC</a>
+            <span style="color:var(--ink-soft);font-size:12px;"> · Sistema: Certificado electrónico</span>
+          </span>
+          <span><span style="background:#EEE;color:var(--ink-soft);padding:3px 9px;border-radius:20px;font-size:11px;margin-right:8px;">Inactivo</span><button class="btn btn-ghost btn-sm">Editar</button> <button class="btn btn-gold btn-sm">Activar</button></span>
+        </div>
+        <div class="formfoot"><button class="btn btn-primary btn-sm">+ Nueva plantilla</button></div>
+      </div>
+    </div>
+
+    <!-- ============ VISTA REPORTES ============ -->
+    <div class="view" id="view-reportes">
+      <div class="card">
+        <h2>Reportes</h2>
+        <div class="hint">Exporta el listado según tu área. Administración exporta sus propias solicitudes; Informática exporta el detalle de gestión.</div>
+        <div class="formfoot" style="justify-content:flex-start;">
+          <button class="btn btn-ghost">Exportar a Excel</button>
+          <button class="btn btn-ghost">Exportar a PDF</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ VISTA AUDITORÍA ============ -->
+    <div class="view" id="view-auditoria">
+      <div class="card">
+        <h2>Auditoría general</h2>
+        <div class="hint">Registro de todas las acciones del sistema — visible solo para Informática.</div>
+        <div class="audit-item"><div class="audit-dot"></div><div class="audit-body"><b>Notificación enviada a Informática</b><div class="audit-meta">Mesa de Partes — Administración · hoy, 09:20</div></div></div>
+        <div class="audit-item"><div class="audit-dot"></div><div class="audit-body"><b>Clave restablecida para rfernandez</b><div class="audit-meta">Administrador del sistema · hoy, 08:05</div></div></div>
+        <div class="audit-item"><div class="audit-dot"></div><div class="audit-body"><b>Nueva sede registrada: Independencia</b><div class="audit-meta">Informática · ayer, 14:12</div></div></div>
+      </div>
+    </div>
+  </div><!-- /content -->
+
+  <footer class="sysfoot">
+    Sistema interno del MVCLM (Módulo de Violencia contra la Mujer e Integrantes del Grupo Familiar) · Desarrollado por Ing. Johann Salinas Vizcarra
+  </footer>
+  </main>
+</div>
+
+<div class="toast" id="toast"><span class="dot"></span><span id="toastText">Notificación enviada a informatica@pj.gob.pe</span></div>
+
+<script>
+  // --- Etapas de avance por acceso (Mantenimiento_Estados_Progreso) — editable, no depende del sistema ---
+  const ESTADOS_PROGRESO = {
+    "Registrado": 10,
+    "Asignado": 25,
+    "En progreso": 50,
+    "En espera": 75,
+    "Resuelto": 100
+  };
+
+  // --- DNI ---
+  const dnisExistentes = ["07452136","41209988","10023344"];
+  const dniInput = document.getElementById('dniInput');
+  const dniField = document.getElementById('dniField');
+  const dniErrorMsg = document.getElementById('dniErrorMsg');
+  const dniOkMsg = document.getElementById('dniOkMsg');
+  dniInput.addEventListener('input', () => {
+    dniInput.value = dniInput.value.replace(/\D/g,'').slice(0,8);
+    dniField.classList.remove('error','ok'); dniErrorMsg.style.display='none'; dniOkMsg.style.display='none';
+    if(dniInput.value.length === 8){
+      dniField.classList.add(dnisExistentes.includes(dniInput.value) ? 'error' : 'ok');
+    }
+  });
+
+  function soloLetras(el, fieldEl){
+    el.addEventListener('input', () => {
+      const limpio = el.value.replace(/[^a-zA-ZÀ-ÿñÑ\s]/g,'');
+      fieldEl.classList.toggle('error', limpio !== el.value);
+      el.value = limpio;
+    });
+  }
+  soloLetras(document.getElementById('apellidosInput'), document.getElementById('apellidosField'));
+  soloLetras(document.getElementById('nombresInput'), document.getElementById('nombresField'));
+
+  document.getElementById('fileInput').addEventListener('change', (e) => {
+    document.getElementById('fname').textContent = e.target.files[0] ? e.target.files[0].name : "Ningún archivo seleccionado";
+  });
+
+  // --- Plantillas de documentos por sistema (Mantenimiento_Plantillas) ---
+  const PLANTILLAS = {
+    "RENIEC": { nombre: "Oficio RENIEC — Consulta de menores", campos: ["NOMBRES","APELLIDOS","DNI","FECHA"] }
+  };
+
+  function accesosRequeridos(){
+    return [...document.querySelectorAll('.req-check')].filter(c => c.checked).map(c => c.dataset.name);
+  }
+
+  function pintarMgmtList(){
+    const lista = accesosRequeridos();
+    const mgmt = document.getElementById('mgmtList');
+    mgmt.innerHTML = '';
+    lista.forEach(nombre => {
+      const row = document.createElement('div');
+      row.className = 'mgmt-row';
+      const esUsuarioRed = nombre === "Usuario de red";
+      const plantilla = PLANTILLAS[nombre];
+      row.innerHTML = `
+        <div class="left"><span class="name">${nombre}</span><span class="weight">${plantilla ? 'Tiene plantilla: '+plantilla.nombre : ''}</span></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${esUsuarioRed ? '<button class="btn btn-ghost btn-sm" type="button" onclick="generarCredenciales()">Generar credenciales</button>' : ''}
+          ${plantilla ? '<button class="btn btn-ghost btn-sm" type="button" onclick="generarDocumento(\''+nombre+'\')">Generar documento</button>' : ''}
+          <select class="mgmt-status" data-name="${nombre}">
+            <option>Registrado</option>
+            <option>Asignado</option>
+            <option>En progreso</option>
+            <option>En espera</option>
+            <option>Resuelto</option>
+          </select>
+        </div>`;
+      mgmt.appendChild(row);
+      if(esUsuarioRed){
+        const credBox = document.createElement('div');
+        credBox.id = 'credBox';
+        credBox.style.cssText = 'display:none;margin:0 2px 10px;padding:12px 14px;background:var(--gold-soft);border:1px solid #DCC581;border-radius:8px;font-size:12.5px;';
+        mgmt.appendChild(credBox);
+      }
+      if(plantilla){
+        const docBox = document.createElement('div');
+        docBox.id = 'docBox-' + nombre.replace(/\s+/g,'_');
+        docBox.style.cssText = 'display:none;margin:0 2px 10px;padding:12px 14px;background:#EFF3F7;border:1px solid #C7D6E3;border-radius:8px;font-size:12.5px;';
+        mgmt.appendChild(docBox);
+      }
+    });
+    mgmt.querySelectorAll('.mgmt-status').forEach(sel => sel.addEventListener('change', calcularAvance));
+    calcularAvance();
+  }
+
+  function generarDocumento(nombreSistema){
+    const plantilla = PLANTILLAS[nombreSistema];
+    const apellidos = document.getElementById('apellidosInput').value.trim() || 'Pérez Ramírez';
+    const nombres = document.getElementById('nombresInput').value.trim() || 'Juan';
+    const dni = document.getElementById('dniInput').value.trim() || '07452136';
+    const fecha = new Date().toLocaleDateString('es-PE');
+
+    const box = document.getElementById('docBox-' + nombreSistema.replace(/\s+/g,'_'));
+    box.style.display = 'block';
+    box.innerHTML = `
+      <div style="margin-bottom:6px;"><b>${plantilla.nombre}</b> — campos combinados automáticamente:</div>
+      <div style="margin-bottom:4px;">NOMBRES: ${nombres} &nbsp; APELLIDOS: ${apellidos} &nbsp; DNI: ${dni} &nbsp; FECHA: ${fecha}</div>
+      <div style="font-size:11px;color:var(--ink-soft);margin-top:6px;">Documento generado en Drive a partir de la plantilla — listo para descargar o adjuntar al expediente.</div>`;
+
+    const hora = new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('auditLogIT').prepend(crearAudit('Documento generado: '+plantilla.nombre, 'Informática · hoy, '+hora));
+  }
+
+  function calcularAvance(){
+    const selects = [...document.querySelectorAll('.mgmt-status')];
+    let suma = 0;
+    selects.forEach(sel => { suma += ESTADOS_PROGRESO[sel.value] || 0; });
+    const pct = selects.length ? Math.round(suma / selects.length) : 0;
+    ['Admin','IT'].forEach(sufijo => {
+      document.getElementById('progressFill'+sufijo).style.width = pct + '%';
+      document.getElementById('progressLabel'+sufijo).textContent = pct + '%';
+    });
+  }
+
+  document.querySelectorAll('.req-check').forEach(c => c.addEventListener('change', pintarMgmtList));
+
+  document.getElementById('notifyBtn').addEventListener('click', () => {
+    const datos = {
+      resolucion: document.getElementById('resolucionInput').value,
+      fechaResolucion: document.getElementById('fechaResolucion').value,
+      sede: document.getElementById('sedeInput').value,
+      dni: document.getElementById('dniInput').value,
+      apellidos: document.getElementById('apellidosInput').value,
+      nombres: document.getElementById('nombresInput').value,
+      perfil: document.getElementById('perfilInput').value,
+      adjuntoUrl: '' // TODO: subir el PDF a Drive (DriveApp) y poner aquí la URL real
+    };
+    const sistemasRequeridos = accesosRequeridos();
+
+    if (!datos.resolucion || !datos.fechaResolucion || !datos.dni || !datos.apellidos || !datos.nombres) {
+      alert('Completa resolución, fecha de resolución, DNI, apellidos y nombres antes de notificar.');
+      return;
+    }
+    if (sistemasRequeridos.length === 0) {
+      alert('Marca al menos un acceso en "¿Qué accesos requiere?".');
+      return;
+    }
+
+    const btn = document.getElementById('notifyBtn');
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+
+    google.script.run
+      .withSuccessHandler(function (resultadoCrear) {
+        if (!resultadoCrear.ok) {
+          alert('No se pudo crear la solicitud: ' + (resultadoCrear.mensaje || ''));
+          btn.disabled = false; btn.textContent = 'Notificar a Informática';
+          return;
+        }
+        google.script.run
+          .withSuccessHandler(function () {
+            document.getElementById('fechaSolicitud').value = new Date().toISOString().split('T')[0];
+            const toast = document.getElementById('toast');
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3200);
+            const hora = new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
+            document.getElementById('auditLogAdmin').prepend(crearAudit('Notificación enviada a Informática', 'Mesa de Partes — Administración · hoy, '+hora));
+            btn.disabled = false; btn.textContent = 'Notificar a Informática';
+          })
+          .withFailureHandler(function (error) {
+            alert('La solicitud se creó, pero falló la notificación: ' + error.message);
+            btn.disabled = false; btn.textContent = 'Notificar a Informática';
+          })
+          .solicitudes_notificar(sessionToken, resultadoCrear.item, sistemasRequeridos);
+      })
+      .withFailureHandler(function (error) {
+        alert('No se pudo crear la solicitud: ' + error.message);
+        btn.disabled = false; btn.textContent = 'Notificar a Informática';
+      })
+      .solicitudes_crear(sessionToken, datos);
+  });
+
+  document.getElementById('saveProgressBtn').addEventListener('click', () => {
+    const hora = new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
+    const pct = document.getElementById('progressLabelIT').textContent;
+    document.getElementById('auditLogIT').prepend(crearAudit('Avance actualizado a '+pct, 'Informática · hoy, '+hora));
+    document.getElementById('auditLogAdmin').prepend(crearAudit('Informática actualizó el avance de la solicitud', 'Sistema · hoy, '+hora));
+  });
+
+  function crearAudit(titulo, meta){
+    const div = document.createElement('div');
+    div.className = 'audit-item';
+    div.innerHTML = `<div class="audit-dot"></div><div class="audit-body"><b>${titulo}</b><div class="audit-meta">${meta}</div></div>`;
+    return div;
+  }
+
+  function restablecerClave(btn, usuario){
+    const clave = generarClaveTemporal();
+    const box = document.getElementById('credBoxLogin');
+    box.style.display = 'block';
+    box.innerHTML = `<b>Nueva contraseña temporal para ${usuario}:</b> ${clave}
+      <div style="font-size:11px;color:var(--ink-soft);margin-top:6px;">Se muestra una sola vez. Debe cambiarla en su próximo inicio de sesión. No queda guardada en esta tabla.</div>`;
+    const hora = new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('auditLogLogin').prepend(crearAudit('Clave restablecida para '+usuario, 'Administrador del sistema · hoy, '+hora+' · contraseña no almacenada'));
+  }
+
+  function toggleDetalle(id){
+    const row = document.getElementById(id);
+    row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+  }
+
+  function generarCredenciales(){
+    const apellidos = document.getElementById('apellidosInput').value.trim().split(' ')[0] || 'apellido';
+    const nombres = document.getElementById('nombresInput').value.trim().split(' ')[0] || 'nombre';
+    const usuario = (nombres.charAt(0) + apellidos).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    const clave = generarClaveTemporal();
+    const box = document.getElementById('credBox');
+    box.style.display = 'block';
+    box.innerHTML = `
+      <div style="margin-bottom:6px;"><b>Usuario de red:</b> ${usuario}</div>
+      <div style="margin-bottom:8px;"><b>Contraseña temporal:</b> <span id="claveTexto">${clave}</span></div>
+      <div style="font-size:11px;color:var(--ink-soft);">Esta contraseña se muestra una sola vez y no queda guardada en la hoja. Comunícala por un canal seguro (no por este mismo registro) e indica que debe cambiarla en el primer inicio de sesión.</div>`;
+    const hora = new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('auditLogIT').prepend(crearAudit('Credenciales generadas para Usuario de red ('+usuario+')', 'Informática · hoy, '+hora+' · contraseña no almacenada'));
+  }
+
+  function generarClaveTemporal(){
+    const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$';
+    let clave = '';
+    for(let i=0;i<10;i++) clave += chars[Math.floor(Math.random()*chars.length)];
+    return clave;
+  }
+
+  // ============ SESIÓN Y NAVEGACIÓN ============
+  // El token llega por la URL (?token=...) tras validarse en login.html contra
+  // login_validar (Autenticacion.gs). Aquí solo se confirma con el servidor
+  // que sigue siendo válido — nunca se decide el área en el cliente.
+  const AREA_CODIGO = { 'Administración': 'admin', 'Informática': 'it' };
+  let sessionToken = null;
+
+  const DESTINO_INICIAL = { admin: 'admin-form', it: 'dashboard' };
+
+  const TITULOS = {
+    'admin-form': 'Registrar alta de acceso', 'admin-list': 'Gestión de solicitudes',
+    'it': 'Gestión de accesos', 'usuarios': 'Usuarios del sistema', 'dashboard': 'Dashboard',
+    'mantenimiento': 'Mantenimiento', 'reportes': 'Reportes', 'auditoria': 'Auditoría'
+  };
+  const TOP_VIEW = {
+    'admin-form':'admin', 'admin-list':'admin', 'it':'it', 'usuarios':'usuarios',
+    'dashboard':'dashboard', 'mantenimiento':'mantenimiento', 'reportes':'reportes', 'auditoria':'auditoria'
+  };
+  const NAV_ID = {
+    'admin-form':'navNueva', 'admin-list':'navGestion', 'it':'navAccesos', 'usuarios':'navUsuarios',
+    'dashboard':'navDashboard', 'mantenimiento':'navMantenimiento', 'reportes':'navReportes', 'auditoria':'navAuditoria'
+  };
+
+  function goTo(destino){
+    const top = TOP_VIEW[destino];
+    ['admin','it','usuarios','dashboard','mantenimiento','reportes','auditoria'].forEach(id => {
+      document.getElementById('view-'+id).classList.toggle('active', id===top);
+    });
+    if(top === 'admin'){
+      document.getElementById('admin-sub-form').classList.toggle('active', destino==='admin-form');
+      document.getElementById('admin-sub-list').classList.toggle('active', destino==='admin-list');
+    }
+    document.querySelectorAll('.navitem').forEach(item => item.classList.remove('active'));
+    if(NAV_ID[destino]) document.getElementById(NAV_ID[destino]).classList.add('active');
+    document.getElementById('pageTitle').textContent = TITULOS[destino];
+  }
+
+  function cerrarSesion(){
+    const irALogin = () => { window.location.href = window.location.pathname + '?page=login'; };
+    if (sessionToken) {
+      google.script.run.withSuccessHandler(irALogin).withFailureHandler(irALogin).login_cerrarSesion(sessionToken);
+    } else {
+      irALogin();
+    }
+  }
+
+  function cargarSesion(){
+    const params = new URLSearchParams(window.location.search);
+    sessionToken = params.get('token');
+
+    if(!sessionToken){
+      mostrarSelectorPreview();
+      return;
+    }
+
+    google.script.run
+      .withSuccessHandler(function (resultado) {
+        if (resultado.ok) {
+          aplicarSesion(resultado.sesion);
+        } else {
+          // Token vencido o inválido: de vuelta al login real, no a la vista previa.
+          window.location.href = window.location.pathname + '?page=login';
+        }
+      })
+      .withFailureHandler(function () {
+        mostrarSelectorPreview();
+      })
+      .login_obtenerSesion(sessionToken);
+  }
+
+  function mostrarSelectorPreview(){
+    document.getElementById('pageTitle').textContent = 'Vista previa (sin sesión)';
+    document.getElementById('crumb').textContent = 'Modo revisión de diseño';
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'max-width:460px;margin:40px auto;';
+    overlay.innerHTML = `
+      <div class="card">
+        <h2>Revisar sin iniciar sesión</h2>
+        <div class="hint">En producción, esta pantalla exige entrar por el login real. Para revisar el diseño aquí, elige con qué área quieres ver el sistema:</div>
+        <div class="formfoot" style="justify-content:flex-start;border-top:none;padding-top:0;">
+          <button class="btn btn-primary" onclick='aplicarSesion({area:"Administración", nombre:"Vista previa", cargo:"Modo demostración"})'>Ver como Administración</button>
+          <button class="btn btn-gold" onclick='aplicarSesion({area:"Informática", nombre:"Vista previa", cargo:"Modo demostración"})'>Ver como Informática</button>
+        </div>
+      </div>`;
+    document.querySelector('.content').appendChild(overlay);
+  }
+
+  function aplicarSesion(sesion){
+    const codigoArea = AREA_CODIGO[sesion.area] || sesion.area; // por si ya viene como 'admin'/'it' (vista previa)
+    document.querySelectorAll('.navitem').forEach(item => {
+      const roles = (item.dataset.roles || '').split(',');
+      item.style.display = roles.includes(codigoArea) ? 'flex' : 'none';
+    });
+    document.getElementById('sesionArea').textContent = sesion.area;
+    document.getElementById('userchip').innerHTML = 'Sesión: <b>'+sesion.nombre+' — '+sesion.cargo+'</b>';
+    document.querySelectorAll('.content > div[style*="max-width:460px"]').forEach(el => el.remove());
+    goTo(DESTINO_INICIAL[codigoArea]);
+    pintarMgmtList();
+  }
+
+  cargarSesion();
+</script>
+</body>
+</html>
