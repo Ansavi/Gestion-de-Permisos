@@ -129,7 +129,7 @@
   }
 </style>
 </head>
-<body>
+<body data-base-url="<?= baseUrl ?>" data-token="<?= token ?>">
 
 <div class="app">
   <aside class="sidebar">
@@ -784,6 +784,10 @@
   // que sigue siendo válido — nunca se decide el área en el cliente.
   const AREA_CODIGO = { 'Administración': 'admin', 'Informática': 'it' };
   let sessionToken = null;
+  function urlBase(){
+    const v = document.body.dataset.baseUrl || '';
+    return v.charAt(0) === '<' ? window.location.pathname : v;
+  }
 
   const DESTINO_INICIAL = { admin: 'admin-form', it: 'dashboard' };
 
@@ -816,7 +820,7 @@
   }
 
   function cerrarSesion(){
-    const irALogin = () => { window.location.href = window.location.pathname + '?page=login'; };
+    const irALogin = () => { window.top.location.href = urlBase() + '?page=login'; };
     if (sessionToken) {
       google.script.run.withSuccessHandler(irALogin).withFailureHandler(irALogin).login_cerrarSesion(sessionToken);
     } else {
@@ -825,8 +829,8 @@
   }
 
   function cargarSesion(){
-    const params = new URLSearchParams(window.location.search);
-    sessionToken = params.get('token');
+    const t = document.body.dataset.token || '';
+    sessionToken = (t && t.charAt(0) !== '<') ? t : null; // el servidor inyecta el token (doGet)
 
     if(!sessionToken){
       mostrarSelectorPreview();
@@ -839,7 +843,7 @@
           aplicarSesion(resultado.sesion);
         } else {
           // Token vencido o inválido: de vuelta al login real, no a la vista previa.
-          window.location.href = window.location.pathname + '?page=login';
+          window.top.location.href = urlBase() + '?page=login';
         }
       })
       .withFailureHandler(function () {
