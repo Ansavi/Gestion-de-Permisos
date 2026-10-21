@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acceso — Sistema de Gestión de Accesos MVCLM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy: #1F3A5C;
+    --navy-dark: #16293F;
+    --paper: #F3F4F1;
+    --panel: #FFFFFF;
+    --line: #DCDED8;
+    --ink: #1B1F23;
+    --ink-soft: #565C5F;
+    --gold: #B0872E;
+    --warn: #B23A32;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans', sans-serif;font-size:14px;line-height:1.5;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;
+  }
+  h1,h2{font-family:'Source Serif 4', serif;margin:0;color:var(--navy-dark);font-weight:600;}
+
+  .brandmark{display:flex;flex-direction:column;align-items:center;margin-bottom:22px;}
+  .brandmark .seal{width:46px;height:46px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Source Serif 4',serif;font-weight:700;color:var(--navy-dark);margin-bottom:12px;font-size:16px;}
+  .brandmark .name{font-size:19px;color:var(--navy-dark);}
+  .brandmark .sub{font-size:12px;color:var(--ink-soft);margin-top:3px;}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:30px 32px;width:100%;max-width:380px;box-shadow:0 2px 10px rgba(20,30,45,.05);}
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:6px;font-weight:500;}
+  .field input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:6px;font-size:13.5px;font-family:inherit;color:var(--ink);background:#FBFBFA;}
+  .field input:focus{outline:2px solid var(--navy);outline-offset:1px;border-color:var(--navy);}
+  .field.error input{border-color:var(--warn);background:#F6E2E0;}
+
+  .btn{border:none;border-radius:6px;padding:11px 16px;font-size:13.5px;font-weight:500;cursor:pointer;font-family:inherit;width:100%;}
+  .btn-primary{background:var(--navy);color:#fff;}
+  .btn-primary:hover{background:var(--navy-dark);}
+
+  a.link{font-size:12px;color:var(--navy);text-decoration:none;}
+  a.link:hover{text-decoration:underline;}
+
+  #loginError{display:none;color:var(--warn);font-size:12px;margin-top:10px;}
+  #resetBox{display:none;margin-top:12px;padding:12px 14px;background:#F0F1EC;border:1px solid var(--line);border-radius:8px;font-size:12px;color:var(--ink-soft);}
+  #resetOk{display:none;margin-top:10px;padding:10px 12px;background:#E2EFE8;border:1px solid #BFDBCB;border-radius:8px;font-size:12px;color:#2C6248;}
+
+  footer{
+    margin-top:28px;text-align:center;font-size:11px;color:var(--ink-soft);line-height:1.6;max-width:420px;
+  }
+</style>
+</head>
+<body>
+
+  <div class="brandmark">
+    <div class="seal">GA</div>
+    <div class="name">Gestión de Accesos</div>
+    <div class="sub">Sedes Carabayllo · Independencia</div>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:18px;margin-bottom:4px;">Iniciar sesión</h2>
+    <p style="font-size:12px;color:var(--ink-soft);margin:4px 0 18px;">Ingresa con tu usuario y contraseña asignados por Informática.</p>
+
+    <div class="field" id="userField">
+      <label>Usuario</label>
+      <input type="text" id="loginUsuario" placeholder="Ej. mvargas" autocomplete="username">
+    </div>
+    <div class="field" id="passField">
+      <label>Contraseña</label>
+      <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
+    </div>
+
+    <button class="btn btn-primary" onclick="iniciarSesion()">Ingresar</button>
+
+    <div id="loginError">Usuario o contraseña incorrectos.</div>
+
+    <div style="margin-top:14px;text-align:center;">
+      <a class="link" href="#" onclick="document.getElementById('resetBox').style.display='block';return false;">¿Olvidaste tu contraseña?</a>
+    </div>
+
+    <div id="resetBox">
+      Ingresa tu DNI o usuario. Te enviaremos un enlace de un solo uso a tu correo registrado para crear una nueva contraseña. No se te mostrará ni enviará tu contraseña anterior.
+      <div style="margin-top:8px;">
+        <input type="text" placeholder="DNI o usuario" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:12.5px;margin-bottom:8px;">
+        <button class="btn btn-primary" style="padding:8px;font-size:12.5px;" onclick="document.getElementById('resetOk').style.display='block';">Enviar enlace</button>
+      </div>
+      <div id="resetOk">Si el usuario existe, se envió un enlace a su correo registrado.</div>
+    </div>
+  </div>
+
+  <footer>
+    Sistema interno del MVCLM (Módulo de Violencia contra la Mujer e Integrantes del Grupo Familiar)<br>
+    Desarrollado por Ing. Johann Salinas Vizcarra
+  </footer>
+
+<script>
+  // Simulación de la tabla Credenciales — en producción esta validación la hace Apps Script
+  // contra el hash guardado en la hoja, nunca contra texto plano en el cliente.
+  const usuariosSistema = {
+    'mvargas':  {area:'admin', clave:'demo'},
+    'rfernandez': {area:'admin', clave:'demo'},
+    'cinjante': {area:'it', clave:'demo'}
+  };
+
+  function iniciarSesion(){
+    const u = document.getElementById('loginUsuario').value.trim().toLowerCase();
+    const p = document.getElementById('loginPass').value;
+    const match = usuariosSistema[u];
+    const ok = match; // en este mockup cualquier contraseña no vacía sirve, para simplificar la demo
+    document.getElementById('userField').classList.toggle('error', !match);
+    document.getElementById('loginError').style.display = match ? 'none' : 'block';
+    if(match){
+      window.location.href = 'sistema.html?u=' + encodeURIComponent(u);
+    }
+  }
+
+  document.getElementById('loginPass').addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') iniciarSesion();
+  });
+</script>
+</body>
+</html>
