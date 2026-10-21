@@ -5,8 +5,13 @@
  */
 
 function doGet(e) {
-  var pagina = (e.parameter.page || 'login');
+  var params = (e && e.parameter) || {};
+  var pagina = params.page || 'login';
   var plantilla = HtmlService.createTemplateFromFile(pagina === 'sistema' ? 'sistema' : 'login');
+  // El HTML corre dentro de un iframe: no puede leer ?token= ni conocer la URL /exec
+  // por sí mismo, así que el servidor se las inyecta.
+  plantilla.token = params.token || '';
+  plantilla.baseUrl = ScriptApp.getService().getUrl();
   return plantilla.evaluate()
     .setTitle('Sistema de Gestión de Accesos — MVCLM')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
