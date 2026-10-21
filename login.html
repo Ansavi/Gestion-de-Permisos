@@ -54,7 +54,7 @@
   }
 </style>
 </head>
-<body>
+<body data-base-url="<?= baseUrl ?>">
 
   <div class="brandmark">
     <div class="seal">GA</div>
@@ -99,24 +99,48 @@
   </footer>
 
 <script>
-  // Simulación de la tabla Credenciales — en producción esta validación la hace Apps Script
-  // contra el hash guardado en la hoja, nunca contra texto plano en el cliente.
-  const usuariosSistema = {
-    'mvargas':  {area:'admin', clave:'demo'},
-    'rfernandez': {area:'admin', clave:'demo'},
-    'cinjante': {area:'it', clave:'demo'}
-  };
+  // Login real: llama a login_validar(usuario, clave) en Autenticacion.gs,
+  // que revisa el hash guardado en Credenciales (nunca contraseñas en texto
+  // plano). Ya NO hay usuarios de prueba aquí — todo se valida en el servidor.
 
   function iniciarSesion(){
-    const u = document.getElementById('loginUsuario').value.trim().toLowerCase();
+    const u = document.getElementById('loginUsuario').value.trim();
     const p = document.getElementById('loginPass').value;
-    const match = usuariosSistema[u];
-    const ok = match; // en este mockup cualquier contraseña no vacía sirve, para simplificar la demo
-    document.getElementById('userField').classList.toggle('error', !match);
-    document.getElementById('loginError').style.display = match ? 'none' : 'block';
-    if(match){
-      window.location.href = 'sistema.html?u=' + encodeURIComponent(u);
+
+    if (!u || !p) {
+      mostrarError('Ingresa usuario y contraseña.');
+      return;
     }
+
+    document.getElementById('loginError').style.display = 'none';
+    document.getElementById('userField').classList.remove('error');
+
+    google.script.run
+      .withSuccessHandler(function (resultado) {
+        if (resultado.ok) {
+          // La página corre en un iframe: hay que navegar la ventana SUPERIOR (window.top)
+          // hacia la URL /exec que inyectó doGet, no el iframe.
+          const base = urlBase();
+          window.top.location.href = base + '?page=sistema&token=' + encodeURIComponent(resultado.token);
+        } else {
+          mostrarError(resultado.mensaje || 'Usuario o contraseña incorrectos.');
+        }
+      })
+      .withFailureHandler(function (error) {
+        mostrarError('No se pudo conectar con el sistema: ' + error.message);
+      })
+      .login_validar(u, p);
+  }
+
+  function urlBase(){
+    const v = document.body.dataset.baseUrl || '';
+    return v.charAt(0) === '<' ? window.location.pathname : v; // fallback solo para vista previa estática
+  }
+
+  function mostrarError(texto){
+    document.getElementById('userField').classList.add('error');
+    document.getElementById('loginError').textContent = texto;
+    document.getElementById('loginError').style.display = 'block';
   }
 
   document.getElementById('loginPass').addEventListener('keydown', (e) => {
