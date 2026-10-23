@@ -69,7 +69,7 @@ function accesos_generarDocumento(token, itemSolicitud, nombreSistema) {
   var sesion = login_exigirArea_(token, 'Informática');
 
   var plantilla = mantenimiento_listarPlantillas()
-    .filter(function (p) { return p.SISTEMA_ASOCIADO === nombreSistema && p.ESTADO === 'Activo'; })[0];
+    .filter(function (p) { return util_mayus(p.SISTEMA_ASOCIADO) === util_mayus(nombreSistema) && p.ESTADO === 'Activo'; })[0];
   if (!plantilla) throw new Error('No hay una plantilla activa asociada a "' + nombreSistema + '".');
 
   var solicitud = util_leerComoObjetos(HOJA_SOLICITUDES).filter(function (s) { return s.ITEM === itemSolicitud; })[0];
