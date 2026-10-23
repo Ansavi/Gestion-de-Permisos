@@ -37,7 +37,7 @@ function usuarios_crear(token, datos) {
   var hoja = util_obtenerHoja(HOJA_CREDENCIALES);
   var id = util_siguienteId(HOJA_CREDENCIALES);
   hoja.appendRow([
-    id, datos.nombres, datos.apellidos, util_normalizarDni(datos.dni), datos.cargo,
+    id, util_mayus(datos.nombres), util_mayus(datos.apellidos), util_normalizarDni(datos.dni), util_mayus(datos.cargo),
     datos.area, datos.usuario, salt, hash, util_fechaHoy(), 'Activo'
   ]);
 
