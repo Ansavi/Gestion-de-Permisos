@@ -16,6 +16,7 @@ function mantenimiento_listarSedes() { return util_leerComoObjetos(HOJA_SEDE); }
 
 function mantenimiento_crearSede(token, nombreSede) {
   var sesion = login_exigirArea_(token, 'Informática');
+  nombreSede = util_mayus(nombreSede);
   util_obtenerHoja(HOJA_SEDE).appendRow([nombreSede, 'Activo']);
   auditoria_registrar(sesion.usuario, 'Sede creada: ' + nombreSede, nombreSede, sesion.area);
   return { ok: true };
@@ -36,6 +37,7 @@ function mantenimiento_listarPerfiles() { return util_leerComoObjetos(HOJA_PERFI
 
 function mantenimiento_crearPerfil(token, nombrePerfil) {
   var sesion = login_exigirArea_(token, 'Informática');
+  nombrePerfil = util_mayus(nombrePerfil);
   util_obtenerHoja(HOJA_PERFIL).appendRow([nombrePerfil, 'Activo']);
   auditoria_registrar(sesion.usuario, 'Perfil creado: ' + nombrePerfil, nombrePerfil, sesion.area);
   return { ok: true };
@@ -67,6 +69,7 @@ function mantenimiento_crearSistema(token, nombreSistema, requiereValor) {
   var sesion = login_exigirArea_(token, 'Informática');
   var id = util_siguienteId(HOJA_SISTEMAS);
   var orden = util_leerComoObjetos(HOJA_SISTEMAS).length + 1;
+  nombreSistema = util_mayus(nombreSistema);
   util_obtenerHoja(HOJA_SISTEMAS).appendRow([id, nombreSistema, requiereValor ? 'SI' : 'NO', orden, 'Activo']);
   auditoria_registrar(sesion.usuario, 'Sistema creado: ' + nombreSistema, nombreSistema, sesion.area);
   return { ok: true, id: id };
@@ -105,7 +108,7 @@ function mantenimiento_crearPlantilla(token, datos) {
   var sesion = login_exigirArea_(token, 'Informática');
   var id = util_siguienteId(HOJA_PLANTILLAS);
   util_obtenerHoja(HOJA_PLANTILLAS).appendRow([
-    id, datos.nombrePlantilla, datos.sistemaAsociado, datos.idDocDrivePlantilla, datos.camposACombinar, 'Activo'
+    id, util_mayus(datos.nombrePlantilla), util_mayus(datos.sistemaAsociado), datos.idDocDrivePlantilla, util_mayus(datos.camposACombinar), 'Activo'
   ]);
   auditoria_registrar(sesion.usuario, 'Plantilla creada: ' + datos.nombrePlantilla, datos.nombrePlantilla, sesion.area);
   return { ok: true, id: id };
@@ -154,7 +157,7 @@ function mantenimiento_nombreRepetido_(filas, campo, texto, filaExcluida) {
 
 function mantenimiento_editarSede(token, nombreActual, nombreNuevo) {
   var sesion = login_exigirArea_(token, 'Informática');
-  nombreNuevo = String(nombreNuevo || '').trim();
+  nombreNuevo = util_mayus(nombreNuevo);
   if (!nombreNuevo) throw new Error('El nombre de la sede no puede quedar vacío.');
   var filas = util_leerComoObjetos(HOJA_SEDE);
   var fila = filas.filter(function (s) { return s.SEDE === nombreActual; })[0];
@@ -171,7 +174,7 @@ function mantenimiento_editarSede(token, nombreActual, nombreNuevo) {
 
 function mantenimiento_editarPerfil(token, nombreActual, nombreNuevo) {
   var sesion = login_exigirArea_(token, 'Informática');
-  nombreNuevo = String(nombreNuevo || '').trim();
+  nombreNuevo = util_mayus(nombreNuevo);
   if (!nombreNuevo) throw new Error('El nombre del perfil no puede quedar vacío.');
   var filas = util_leerComoObjetos(HOJA_PERFIL);
   var fila = filas.filter(function (p) { return p.PERFIL === nombreActual; })[0];
@@ -188,7 +191,7 @@ function mantenimiento_editarPerfil(token, nombreActual, nombreNuevo) {
 
 function mantenimiento_editarSistema(token, idSistema, nombreNuevo, requiereValor) {
   var sesion = login_exigirArea_(token, 'Informática');
-  nombreNuevo = String(nombreNuevo || '').trim();
+  nombreNuevo = util_mayus(nombreNuevo);
   if (!nombreNuevo) throw new Error('El nombre del sistema no puede quedar vacío.');
   var filas = util_leerComoObjetos(HOJA_SISTEMAS);
   var fila = filas.filter(function (s) { return Number(s.ID_SISTEMA) === Number(idSistema); })[0];
@@ -218,7 +221,7 @@ function mantenimiento_editarPlantilla(token, idPlantilla, datos) {
     .filter(function (p) { return Number(p.ID_PLANTILLA) === Number(idPlantilla); })[0];
   if (!fila) throw new Error('No se encontró la plantilla ' + idPlantilla);
   util_obtenerHoja(HOJA_PLANTILLAS).getRange(fila._fila, 2, 1, 4).setValues([[
-    datos.nombrePlantilla, datos.sistemaAsociado, datos.idDocDrivePlantilla, datos.camposACombinar
+    util_mayus(datos.nombrePlantilla), util_mayus(datos.sistemaAsociado), datos.idDocDrivePlantilla, util_mayus(datos.camposACombinar)
   ]]);
   auditoria_registrar(sesion.usuario, 'Plantilla editada: ' + datos.nombrePlantilla, datos.nombrePlantilla, sesion.area);
   return { ok: true };
