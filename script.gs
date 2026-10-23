@@ -113,8 +113,8 @@ function config_crearHojaSiNoExiste_(nombre, encabezados) {
 /** Precarga Sedes, Perfiles, Sistemas y Etapas de progreso — solo si la hoja está vacía (sin filas de datos). */
 function config_precargarCatalogos_() {
   config_precargarSiVacia_('Mantenimiento_Sede', [
-    ['Carabayllo', 'Activo'],
-    ['Independencia', 'Activo']
+    ['CARABAYLLO', 'Activo'],
+    ['INDEPENDENCIA', 'Activo']
   ]);
 
   config_precargarSiVacia_('Mantenimiento_Perfil', [
@@ -124,13 +124,13 @@ function config_precargarCatalogos_() {
   ]);
 
   config_precargarSiVacia_('Mantenimiento_Sistemas', [
-    [1,'Usuario de red','SI',1,'Activo'],
-    [2,'Correo electrónico corporativo','SI',2,'Activo'],
-    [3,'Sistema de Expedientes (SIJ)','NO',3,'Activo'],
-    [4,'Certificado electrónico','NO',4,'Activo'],
-    [5,'WhatsApp Web','NO',5,'Activo'],
-    [6,'VPN 24Hrs','NO',6,'Activo'],
-    [7,'Amauta Pro','NO',7,'Activo'],
+    [1,'USUARIO DE RED','SI',1,'Activo'],
+    [2,'CORREO ELECTRÓNICO CORPORATIVO','SI',2,'Activo'],
+    [3,'SISTEMA DE EXPEDIENTES (SIJ)','NO',3,'Activo'],
+    [4,'CERTIFICADO ELECTRÓNICO','NO',4,'Activo'],
+    [5,'WHATSAPP WEB','NO',5,'Activo'],
+    [6,'VPN 24HRS','NO',6,'Activo'],
+    [7,'AMAUTA PRO','NO',7,'Activo'],
     [8,'RENIEC','NO',8,'Activo']
   ]);
 
@@ -205,7 +205,7 @@ function config_crearUsuarioAdminInicial() {
   var id = util_siguienteId(HOJA_CREDENCIALES);
 
   hoja.appendRow([
-    id, 'Admin', 'Sistema', '00000000', 'Administrador del Sistema',
+    id, 'ADMIN', 'SISTEMA', '00000000', 'ADMINISTRADOR DEL SISTEMA',
     'Informática', 'admin', salt, hash, util_fechaHoy(), 'Activo'
   ]);
 
@@ -217,4 +217,60 @@ function config_crearUsuarioAdminInicial() {
     claveInicial: claveInicial,
     aviso: 'Cambia esta clave desde "Usuarios" apenas inicies sesión por primera vez.'
   };
+}
+
+
+/**
+ * MIGRACIÓN (se ejecuta UNA vez a mano): convierte a MAYÚSCULAS los textos que ya
+ * estaban guardados en minúscula. Es idempotente: volver a correrla no cambia nada más.
+ *
+ * Convierte solo textos que escribe una persona. NO toca, a propósito:
+ *  - Estados y códigos que el programa compara tal cual (Activo, Pendiente, En progreso,
+ *    Registrado, Resuelto, SI/NO) ni la columna AREA (Administración / Informática).
+ *  - Contraseñas, SALT, HASH, usuario de acceso, usuario de red/correo, DNI, ni IDs/URLs de Drive.
+ *
+ * Los nombres de sistemas se convierten en TODAS las hojas donde aparecen
+ * (Mantenimiento_Sistemas, Detalle_Accesos y Mantenimiento_Plantillas) para que sigan coincidiendo.
+ */
+function config_convertirTextosAMayusculas() {
+  var columnas = {
+    'Solicitudes': ['RESOLUCION', 'SEDE', 'APELLIDOS', 'NOMBRES', 'PERFIL'],
+    'Detalle_Accesos': ['SISTEMA'],
+    'Mantenimiento_Sede': ['SEDE'],
+    'Mantenimiento_Perfil': ['PERFIL'],
+    'Mantenimiento_Sistemas': ['NOMBRE_SISTEMA'],
+    'Mantenimiento_Plantillas': ['NOMBRE_PLANTILLA', 'SISTEMA_ASOCIADO', 'CAMPOS_A_COMBINAR'],
+    'Credenciales': ['NOMBRES', 'APELLIDOS', 'CARGO']
+  };
+
+  var resumen = {};
+  Object.keys(columnas).forEach(function (nombreHoja) {
+    var hoja = SS.getSheetByName(nombreHoja);
+    if (!hoja || hoja.getLastRow() < 2) { resumen[nombreHoja] = 'sin datos'; return; }
+
+    var encabezados = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0];
+    var convertidas = 0;
+    columnas[nombreHoja].forEach(function (encabezado) {
+      var col = encabezados.indexOf(encabezado) + 1;
+      if (col < 1) return;
+      var rango = hoja.getRange(2, col, hoja.getLastRow() - 1, 1);
+      var valores = rango.getValues();
+      var huboCambio = false;
+      valores.forEach(function (fila) {
+        var v = fila[0];
+        if (typeof v === 'string' && v !== '') {
+          var mayus = v.trim().toUpperCase();
+          if (mayus !== v) { fila[0] = mayus; convertidas++; huboCambio = true; }
+        }
+      });
+      if (huboCambio) rango.setValues(valores);
+    });
+    resumen[nombreHoja] = convertidas + ' celdas convertidas';
+  });
+
+  Logger.log('Conversión a mayúsculas: ' + JSON.stringify(resumen));
+  try {
+    auditoria_registrar('sistema', 'Textos convertidos a mayúsculas (config_convertirTextosAMayusculas)', '', 'Sistema', JSON.stringify(resumen));
+  } catch (e) { /* si Auditoria aún no existe, no bloquea la conversión */ }
+  return resumen;
 }
