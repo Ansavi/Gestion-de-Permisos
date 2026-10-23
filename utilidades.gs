@@ -99,3 +99,12 @@ function util_fechaHoy() {
 function util_fechaHoraAhora() {
   return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm');
 }
+
+/**
+ * Texto en MAYÚSCULAS y sin espacios sobrantes. Se usa en todo texto que escribe
+ * una persona (resolución, nombres, apellidos, cargo, catálogos de Mantenimiento).
+ * NO usar en contraseñas, usuario de red/correo ni IDs o URLs de Drive (distinguen mayúsculas).
+ */
+function util_mayus(texto) {
+  return String(texto == null ? '' : texto).trim().toUpperCase();
+}
