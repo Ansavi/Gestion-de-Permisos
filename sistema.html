@@ -389,61 +389,25 @@
 
     <!-- ============ VISTA USUARIOS ============ -->
     <div class="view" id="view-usuarios">
-      <div class="grid">
-        <div>
-          <div class="card">
-            <h2>Usuarios del sistema (Credenciales)</h2>
-            <div class="hint">Personal de Administración e Informática con acceso a esta herramienta, todos con usuario y contraseña propios. El campo <b>Área</b> determina qué opciones del menú se habilitan al iniciar sesión. El restablecimiento genera una clave temporal de un solo uso; nunca se guarda ni se reutiliza la anterior.</div>
-            <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
-              <thead>
-                <tr style="text-align:left;border-bottom:1px solid var(--line);color:var(--ink-soft);">
-                  <th style="padding:8px 6px;">Nombres</th>
-                  <th style="padding:8px 6px;">Apellidos</th>
-                  <th style="padding:8px 6px;">DNI</th>
-                  <th style="padding:8px 6px;">Cargo</th>
-                  <th style="padding:8px 6px;">Área</th>
-                  <th style="padding:8px 6px;">Usuario</th>
-                  <th style="padding:8px 6px;">Estado</th>
-                  <th style="padding:8px 6px;"></th>
-                </tr>
-              </thead>
-              <tbody id="tablaUsuarios">
-                <tr style="border-bottom:1px solid var(--line);">
-                  <td style="padding:8px 6px;">María</td><td style="padding:8px 6px;">Vargas Soto</td><td style="padding:8px 6px;">45231098</td>
-                  <td style="padding:8px 6px;">Mesa de Partes</td><td style="padding:8px 6px;">Administración</td><td style="padding:8px 6px;">mvargas</td>
-                  <td style="padding:8px 6px;"><span style="background:var(--ok-soft);color:var(--ok);padding:3px 9px;border-radius:20px;">Activo</span></td>
-                  <td style="padding:8px 6px;"><button class="btn btn-ghost btn-sm" onclick="restablecerClave(this,'mvargas')">Restablecer clave</button></td>
-                </tr>
-                <tr style="border-bottom:1px solid var(--line);">
-                  <td style="padding:8px 6px;">Rosa</td><td style="padding:8px 6px;">Fernández Díaz</td><td style="padding:8px 6px;">48815520</td>
-                  <td style="padding:8px 6px;">Asistente Administrativo</td><td style="padding:8px 6px;">Administración</td><td style="padding:8px 6px;">rfernandez</td>
-                  <td style="padding:8px 6px;"><span style="background:var(--ok-soft);color:var(--ok);padding:3px 9px;border-radius:20px;">Activo</span></td>
-                  <td style="padding:8px 6px;"><button class="btn btn-ghost btn-sm" onclick="restablecerClave(this,'rfernandez')">Restablecer clave</button></td>
-                </tr>
-                <tr style="border-bottom:1px solid var(--line);">
-                  <td style="padding:8px 6px;">Carlos</td><td style="padding:8px 6px;">Injante Ruiz</td><td style="padding:8px 6px;">40118822</td>
-                  <td style="padding:8px 6px;">Analista de Sistemas</td><td style="padding:8px 6px;">Informática</td><td style="padding:8px 6px;">cinjante</td>
-                  <td style="padding:8px 6px;"><span style="background:var(--ok-soft);color:var(--ok);padding:3px 9px;border-radius:20px;">Activo</span></td>
-                  <td style="padding:8px 6px;"><button class="btn btn-ghost btn-sm" onclick="restablecerClave(this,'cinjante')">Restablecer clave</button></td>
-                </tr>
-              </tbody>
-            </table>
-            <div id="credBoxLogin" style="display:none;margin-top:12px;padding:12px 14px;background:var(--gold-soft);border:1px solid #DCC581;border-radius:8px;font-size:12.5px;"></div>
-            <div class="formfoot">
-              <button class="btn btn-primary">+ Nuevo usuario del sistema</button>
-            </div>
-          </div>
+      <div class="card">
+        <h2>Usuarios del sistema</h2>
+        <div class="hint">Personal de Administración e Informática con acceso a esta herramienta. El <b>Área</b> decide qué opciones del menú ve cada persona. Las contraseñas nunca se guardan ni se vuelven a mostrar: al crear un usuario o restablecer su clave se genera una clave temporal que aparece una sola vez.</div>
+        <div id="usuCredBox" style="display:none;margin-bottom:14px;padding:12px 14px;background:var(--gold-soft);border:1px solid #DCC581;border-radius:8px;font-size:12.5px;"></div>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+            <thead>
+              <tr style="text-align:left;border-bottom:1px solid var(--line);color:var(--ink-soft);">
+                <th style="padding:8px 6px;">Nombres</th><th style="padding:8px 6px;">Apellidos</th><th style="padding:8px 6px;">DNI</th>
+                <th style="padding:8px 6px;">Cargo</th><th style="padding:8px 6px;">Área</th><th style="padding:8px 6px;">Usuario</th>
+                <th style="padding:8px 6px;">Estado</th><th style="padding:8px 6px;"></th>
+              </tr>
+            </thead>
+            <tbody id="tablaUsuarios">
+              <tr><td colspan="8" style="padding:12px 6px;color:var(--ink-soft);">Cargando…</td></tr>
+            </tbody>
+          </table>
         </div>
-
-        <div>
-          <div class="card">
-            <h2>Historial de accesos y claves</h2>
-            <div class="hint">Solo queda registrada la acción, nunca la contraseña.</div>
-            <div id="auditLogLogin">
-              <div class="audit-item"><div class="audit-dot"></div><div class="audit-body"><b>Usuario cinjante creado (Área: Informática)</b><div class="audit-meta">Administrador del sistema · ayer, 16:40</div></div></div>
-            </div>
-          </div>
-        </div>
+        <div class="formfoot"><button class="btn btn-primary" onclick="usuNuevo()">+ Nuevo usuario del sistema</button></div>
       </div>
     </div>
 
@@ -727,15 +691,6 @@
     return div;
   }
 
-  function restablecerClave(btn, usuario){
-    const clave = generarClaveTemporal();
-    const box = document.getElementById('credBoxLogin');
-    box.style.display = 'block';
-    box.innerHTML = `<b>Nueva contraseña temporal para ${usuario}:</b> ${clave}
-      <div style="font-size:11px;color:var(--ink-soft);margin-top:6px;">Se muestra una sola vez. Debe cambiarla en su próximo inicio de sesión. No queda guardada en esta tabla.</div>`;
-    const hora = new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
-    document.getElementById('auditLogLogin').prepend(crearAudit('Clave restablecida para '+usuario, 'Administrador del sistema · hoy, '+hora+' · contraseña no almacenada'));
-  }
 
   function toggleDetalle(id){
     const row = document.getElementById(id);
@@ -770,6 +725,7 @@
   // que sigue siendo válido — nunca se decide el área en el cliente.
   const AREA_CODIGO = { 'Administración': 'admin', 'Informática': 'it' };
   let sessionToken = null;
+  let sesionActual = null;
   function urlBase(){
     const v = document.body.dataset.baseUrl || '';
     return v.charAt(0) === '<' ? window.location.pathname : v;
@@ -804,6 +760,7 @@
     if(NAV_ID[destino]) document.getElementById(NAV_ID[destino]).classList.add('active');
     document.getElementById('pageTitle').textContent = TITULOS[destino];
     if (destino === 'mantenimiento') mantCargar();
+    if (destino === 'usuarios') usuCargar();
   }
 
   function cerrarSesion(){
@@ -857,6 +814,7 @@
   }
 
   function aplicarSesion(sesion){
+    sesionActual = sesion;
     const codigoArea = AREA_CODIGO[sesion.area] || sesion.area; // por si ya viene como 'admin'/'it' (vista previa)
     document.querySelectorAll('.navitem').forEach(item => {
       const roles = (item.dataset.roles || '').split(',');
@@ -1090,6 +1048,135 @@
       .withSuccessHandler(() => { mantCargar(); mostrarToast('Estado actualizado: ' + nuevo); })
       .withFailureHandler(err => alert('No se pudo cambiar el estado: ' + err.message))
       [fn](sessionToken, id, nuevo);
+  }
+
+  // ============ USUARIOS (conectado a Usuarios.gs) ============
+  const USU = { lista: [] };
+  const AREAS = ['Administración', 'Informática'];
+  const soloLetrasJS = t => /^[A-Za-zÀ-ÿñÑ\s]+$/.test(t);
+
+  function usuCargar(){
+    const tbody = document.getElementById('tablaUsuarios');
+    const fila = (texto, color) => '<tr><td colspan="8" style="padding:12px 6px;color:' + color + ';text-transform:none;">' + texto + '</td></tr>';
+    if (!sessionToken) { tbody.innerHTML = fila('Disponible al iniciar sesión.', 'var(--ink-soft)'); return; }
+    tbody.innerHTML = fila('Cargando…', 'var(--ink-soft)');
+    google.script.run
+      .withSuccessHandler(filas => { USU.lista = filas || []; usuPintar(); })
+      .withFailureHandler(err => { tbody.innerHTML = fila('No se pudo cargar: ' + esc(err.message), 'var(--warn)'); })
+      .usuarios_listar(sessionToken);
+  }
+
+  function usuPintar(){
+    const tbody = document.getElementById('tablaUsuarios');
+    if (!USU.lista.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="padding:12px 6px;color:var(--ink-soft);">Sin usuarios todavía.</td></tr>';
+      return;
+    }
+    const td = 'padding:8px 6px;';
+    tbody.innerHTML = USU.lista.map((u, i) => {
+      const activo = u.ESTADO === 'Activo';
+      const soyYo = sesionActual && String(u.USUARIO).toLowerCase() === String(sesionActual.usuario || '').toLowerCase();
+      const pill = activo
+        ? '<span style="background:var(--ok-soft);color:var(--ok);padding:3px 9px;border-radius:20px;">Activo</span>'
+        : '<span style="background:var(--warn-soft);color:var(--warn);padding:3px 9px;border-radius:20px;">Bloqueado</span>';
+      const btnEstado = soyYo ? '' : (activo
+        ? ' <button class="btn btn-ghost btn-sm" onclick="usuCambiarEstado(' + i + ')">Bloquear</button>'
+        : ' <button class="btn btn-gold btn-sm" onclick="usuCambiarEstado(' + i + ')">Activar</button>');
+      return '<tr style="border-bottom:1px solid var(--line);">' +
+        '<td style="' + td + '">' + esc(u.NOMBRES) + '</td><td style="' + td + '">' + esc(u.APELLIDOS) + '</td>' +
+        '<td style="' + td + '">' + esc(u.DNI) + '</td><td style="' + td + '">' + esc(u.CARGO) + '</td>' +
+        '<td style="' + td + '">' + esc(u.AREA) + '</td>' +
+        '<td style="' + td + 'text-transform:none;">' + esc(u.USUARIO) + (soyYo ? ' <span style="color:var(--ink-soft);">(tú)</span>' : '') + '</td>' +
+        '<td style="' + td + '">' + pill + '</td>' +
+        '<td style="' + td + 'white-space:nowrap;text-transform:none;">' +
+          '<button class="btn btn-ghost btn-sm" onclick="usuEditar(' + i + ')">Editar</button> ' +
+          '<button class="btn btn-ghost btn-sm" onclick="usuRestablecer(' + i + ')">Restablecer clave</button>' + btnEstado +
+        '</td></tr>';
+    }).join('');
+  }
+
+  // La clave temporal se muestra una sola vez; no se guarda en ninguna hoja.
+  function usuMostrarClave(titulo, usuario, clave){
+    const box = document.getElementById('usuCredBox');
+    box.style.display = 'block';
+    box.innerHTML = '<b>' + esc(titulo) + '</b><br>Usuario: <b style="text-transform:none;">' + esc(usuario) + '</b>' +
+      ' &nbsp;·&nbsp; Clave temporal: <b style="text-transform:none;font-family:monospace;font-size:14px;">' + esc(clave) + '</b>' +
+      '<div style="font-size:11px;color:var(--ink-soft);margin-top:6px;">Cópiala ahora y entrégala por un canal seguro: no se volverá a mostrar. Si se pierde, usa "Restablecer clave".</div>';
+    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function camposUsuario(u){
+    return [
+      { id: 'nombres', tipo: 'text', label: 'Nombres', valor: u ? u.NOMBRES : '' },
+      { id: 'apellidos', tipo: 'text', label: 'Apellidos', valor: u ? u.APELLIDOS : '' },
+      { id: 'dni', tipo: 'text', label: 'DNI (8 dígitos)', valor: u ? u.DNI : '', placeholder: 'Ej. 07452136' },
+      { id: 'cargo', tipo: 'text', label: 'Cargo', valor: u ? u.CARGO : '', placeholder: 'Ej. ASISTENTE ADMINISTRATIVO' },
+      { id: 'area', tipo: 'select', label: 'Área (define el menú que verá)', opciones: AREAS, valor: u ? u.AREA : AREAS[0] }
+    ];
+  }
+
+  // Valida lo que se puede validar en pantalla; devuelve el mensaje de error o null.
+  function usuValidar(v){
+    v.dni = v.dni.replace(/\D/g, '');
+    if (!v.nombres || !v.apellidos || !v.cargo) return 'Completa nombres, apellidos y cargo.';
+    if (!soloLetrasJS(v.nombres) || !soloLetrasJS(v.apellidos)) return 'Nombres y apellidos no pueden contener números.';
+    if (v.dni.length !== 8) return 'El DNI debe tener 8 dígitos.';
+    return null;
+  }
+
+  function usuEjecutar(nombreFuncion, args, alExito){
+    document.getElementById('modalMantGuardar').disabled = true;
+    google.script.run
+      .withSuccessHandler(r => { cerrarModal(); usuCargar(); alExito(r); })
+      .withFailureHandler(err => modalError(err.message))
+      [nombreFuncion](...args);
+  }
+
+  function usuNuevo(){
+    const campos = camposUsuario(null).concat([
+      { id: 'usuario', tipo: 'text', label: 'Usuario de acceso (minúsculas, sin espacios)', placeholder: 'Ej. mperez', sinMayus: true }
+    ]);
+    abrirModal('Nuevo usuario del sistema', campos, v => {
+      const error = usuValidar(v);
+      if (error) return modalError(error);
+      if (!v.usuario) return modalError('Escribe el usuario de acceso.');
+      usuEjecutar('usuarios_crear', [sessionToken, {
+        nombres: v.nombres, apellidos: v.apellidos, dni: v.dni, cargo: v.cargo, area: v.area, usuario: v.usuario
+      }], r => { usuMostrarClave('Usuario creado', r.usuario, r.claveTemporal); mostrarToast('Usuario creado'); });
+    });
+  }
+
+  function usuEditar(i){
+    const u = USU.lista[i];
+    abrirModal('Editar usuario — ' + u.USUARIO, camposUsuario(u), v => {
+      const error = usuValidar(v);
+      if (error) return modalError(error);
+      usuEjecutar('usuarios_editar', [sessionToken, u.ID_USUARIO, {
+        nombres: v.nombres, apellidos: v.apellidos, dni: v.dni, cargo: v.cargo, area: v.area
+      }], () => mostrarToast('Cambios guardados'));
+    });
+  }
+
+  function usuRestablecer(i){
+    const u = USU.lista[i];
+    if (!confirm('¿Restablecer la clave de "' + u.USUARIO + '"? La clave actual dejará de funcionar y se generará una temporal.')) return;
+    google.script.run
+      .withSuccessHandler(r => { usuMostrarClave('Clave restablecida', r.usuario, r.claveTemporal); mostrarToast('Clave restablecida'); })
+      .withFailureHandler(err => alert('No se pudo restablecer la clave: ' + err.message))
+      .usuarios_restablecerClave(sessionToken, u.ID_USUARIO);
+  }
+
+  function usuCambiarEstado(i){
+    const u = USU.lista[i];
+    const nuevo = u.ESTADO === 'Activo' ? 'Bloqueado' : 'Activo';
+    const aviso = nuevo === 'Bloqueado'
+      ? '¿Bloquear a "' + u.USUARIO + '"? No podrá iniciar sesión hasta que lo actives de nuevo.'
+      : '¿Activar a "' + u.USUARIO + '"?';
+    if (!confirm(aviso)) return;
+    google.script.run
+      .withSuccessHandler(() => { usuCargar(); mostrarToast('Usuario ' + (nuevo === 'Activo' ? 'activado' : 'bloqueado')); })
+      .withFailureHandler(err => alert('No se pudo cambiar el estado: ' + err.message))
+      .usuarios_cambiarEstado(sessionToken, u.ID_USUARIO, nuevo);
   }
 
   // Todo campo de texto se convierte a MAYÚSCULA mientras se escribe,
