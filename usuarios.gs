@@ -66,24 +66,55 @@ function usuarios_crear(token, datos) {
   return { ok: true, usuario: usuario, claveTemporal: claveTemporal }; // se muestra una sola vez
 }
 
-/** Restablece la clave de un usuario del sistema. Nunca reutiliza ni expone la anterior. */
-function usuarios_restablecerClave(token, idUsuario) {
-  var sesion = login_exigirArea_(token, 'Informática'); // solo Informática puede restablecer claves
+/**
+ * Restablece la clave de un usuario del sistema: quien restablece (Informática) ESCRIBE la
+ * nueva clave; ya no se genera una aleatoria. La clave anterior deja de funcionar y la nueva
+ * se guarda solo como hash (nunca en texto plano).
+ */
+function usuarios_restablecerClave(token, idUsuario, nuevaClave) {
+  var sesion = login_exigirArea_(token, 'Informática'); // solo Informática restablece claves de otras personas
 
   var hoja = util_obtenerHoja(HOJA_CREDENCIALES);
-  var fila = util_leerComoObjetos(HOJA_CREDENCIALES).filter(function (u) { return u.ID_USUARIO === idUsuario; })[0];
+  var fila = util_leerComoObjetos(HOJA_CREDENCIALES).filter(function (u) { return Number(u.ID_USUARIO) === Number(idUsuario); })[0];
   if (!fila) throw new Error('No se encontró el usuario ' + idUsuario);
 
-  var claveTemporal = util_generarClaveTemporal();
-  var salt = util_generarSalt();
-  var hash = util_hashClave(claveTemporal, salt);
+  var error = util_validarClaveNueva_(nuevaClave, fila.USUARIO);
+  if (error) throw new Error(error);
 
-  hoja.getRange(fila._fila, 8).setValue(salt);              // SALT
-  hoja.getRange(fila._fila, 9).setValue(hash);              // HASH_CONTRASENA
-  hoja.getRange(fila._fila, 10).setValue(util_fechaHoy());  // FECHA_ULTIMO_CAMBIO
+  var salt = util_generarSalt();
+  hoja.getRange(fila._fila, 8).setValue(salt);                                // SALT
+  hoja.getRange(fila._fila, 9).setValue(util_hashClave(nuevaClave, salt));    // HASH_CONTRASENA
+  hoja.getRange(fila._fila, 10).setValue(util_fechaHoy());                    // FECHA_ULTIMO_CAMBIO
 
   auditoria_registrar(sesion.usuario, 'Clave restablecida para ' + fila.USUARIO, fila.USUARIO, sesion.area, 'Contraseña no almacenada');
-  return { usuario: fila.USUARIO, claveTemporal: claveTemporal }; // se muestra una sola vez
+  return { ok: true, usuario: fila.USUARIO };
+}
+
+/**
+ * Cada persona (de cualquier área) cambia SU PROPIA contraseña eligiéndola ella misma.
+ * Exige la contraseña actual, para que nadie pueda cambiarla si deja la sesión abierta.
+ */
+function usuarios_cambiarMiClave(token, claveActual, claveNueva) {
+  var sesion = login_validarToken_(token);
+  var hoja = util_obtenerHoja(HOJA_CREDENCIALES);
+  var fila = util_leerComoObjetos(HOJA_CREDENCIALES)
+    .filter(function (u) { return String(u.USUARIO).toLowerCase() === String(sesion.usuario).toLowerCase(); })[0];
+  if (!fila || fila.ESTADO !== 'Activo') throw new Error('Tu usuario no está activo.');
+
+  if (!util_verificarClave(String(claveActual || ''), fila.SALT, fila.HASH_CONTRASENA)) {
+    throw new Error('La contraseña actual no es correcta.');
+  }
+  if (String(claveActual) === String(claveNueva)) throw new Error('La nueva contraseña debe ser distinta de la actual.');
+  var error = util_validarClaveNueva_(claveNueva, fila.USUARIO);
+  if (error) throw new Error(error);
+
+  var salt = util_generarSalt();
+  hoja.getRange(fila._fila, 8).setValue(salt);
+  hoja.getRange(fila._fila, 9).setValue(util_hashClave(claveNueva, salt));
+  hoja.getRange(fila._fila, 10).setValue(util_fechaHoy());
+
+  auditoria_registrar(sesion.usuario, 'Cambió su propia contraseña', fila.USUARIO, sesion.area, 'Contraseña no almacenada');
+  return { ok: true };
 }
 
 /** Activa/inactiva un usuario del sistema (no se borra nunca la fila). */
