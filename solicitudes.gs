@@ -31,11 +31,15 @@ function solicitudes_crear(token, datos) {
 
   var hoja = util_obtenerHoja(HOJA_SOLICITUDES);
   var id = util_siguienteId(HOJA_SOLICITUDES);
-  hoja.appendRow([
+  var fila = [
     id, util_mayus(datos.resolucion), datos.fechaResolucion, '', datos.adjuntoUrl || '',
     util_mayus(datos.sede), dni, util_mayus(datos.apellidos), util_mayus(datos.nombres), util_mayus(datos.perfil),
     0, 'Pendiente', 'NO', ''
-  ]);
+  ];
+  var colCreador = solicitudes_asegurarColumnaCreadoPor_(); // quién la registró: define quién la ve después
+  while (fila.length < colCreador) fila.push('');
+  fila[colCreador - 1] = String(sesion.usuario).toLowerCase();
+  hoja.appendRow(fila);
 
   auditoria_registrar(sesion.usuario, 'Solicitud creada', 'ITEM ' + id, sesion.area);
   return { ok: true, item: id };
@@ -54,6 +58,9 @@ function solicitudes_notificar(token, itemSolicitud, sistemasRequeridos) {
   var solicitudes = util_leerComoObjetos(HOJA_SOLICITUDES);
   var solicitud = solicitudes.filter(function (s) { return s.ITEM === itemSolicitud; })[0];
   if (!solicitud) throw new Error('No se encontró la solicitud ITEM ' + itemSolicitud);
+  if (String(solicitud.CREADO_POR || '').toLowerCase() !== String(sesion.usuario).toLowerCase()) {
+    throw new Error('Solo puedes notificar las solicitudes que tú registraste.');
+  }
 
   var hoy = util_fechaHoy();
   // Columnas: FECHA_SOLICITUD=4, NOTIFICADO=13, FECHA_NOTIFICACION=14 (1-based)
@@ -85,11 +92,14 @@ function solicitudes_notificar(token, itemSolicitud, sistemasRequeridos) {
   return { ok: true };
 }
 
-/** Lista las solicitudes de Administración, con filtros opcionales. */
+/** Lista las solicitudes que registró la persona que consulta (Administración), con filtros opcionales. */
 function solicitudes_listar(token, filtros) {
-  login_exigirArea_(token, 'Administración');
+  var sesion = login_exigirArea_(token, 'Administración');
   filtros = filtros || {};
-  var lista = util_leerComoObjetos(HOJA_SOLICITUDES);
+  // Solo las solicitudes que registró esta persona (las anteriores a CREADO_POR no tienen dueño y no se muestran).
+  var lista = util_leerComoObjetos(HOJA_SOLICITUDES).filter(function (s) {
+    return String(s.CREADO_POR || '').toLowerCase() === String(sesion.usuario).toLowerCase();
+  });
   if (filtros.sede) lista = lista.filter(function (s) { return String(s.SEDE).toUpperCase() === util_mayus(filtros.sede); });
   if (filtros.estado) lista = lista.filter(function (s) { return s.ESTADO_GENERAL === filtros.estado; });
   if (filtros.busqueda) {
@@ -119,11 +129,83 @@ function solicitudes_recalcularAvance_(itemSolicitud) {
     var suma = accesos.reduce(function (acc, d) { return acc + (mapaPorcentaje[d.ESTADO] || 0); }, 0);
     avance = Math.round(suma / accesos.length);
   }
-  var estadoGeneral = avance >= 100 ? 'Completado' : (avance > 0 ? 'En proceso' : 'Pendiente');
+  // Los accesos se entregan de forma escalonada: "Pendiente" = ningún acceso ha salido de la primera etapa;
+  // "En proceso" = al menos uno avanzó pero faltan otros; "Completado" = todos resueltos.
+  var etapas = Object.keys(mapaPorcentaje).map(function (k) { return Number(mapaPorcentaje[k]) || 0; });
+  var primeraEtapa = Math.min.apply(null, etapas);
+  var ningunoAvanzo = accesos.every(function (d) { return (Number(mapaPorcentaje[d.ESTADO]) || 0) <= primeraEtapa; });
+  var estadoGeneral = avance >= 100 ? 'Completado' : (ningunoAvanzo ? 'Pendiente' : 'En proceso');
 
   var hoja = util_obtenerHoja(HOJA_SOLICITUDES);
   var solicitud = util_leerComoObjetos(HOJA_SOLICITUDES).filter(function (s) { return s.ITEM === itemSolicitud; })[0];
   if (!solicitud) return;
   hoja.getRange(solicitud._fila, 11).setValue(avance);        // AVANCE_%
   hoja.getRange(solicitud._fila, 12).setValue(estadoGeneral); // ESTADO_GENERAL
+}
+
+/**
+ * Lista para "Gestión de solicitudes" (Administración): cada solicitud con su avance general
+ * y el DETALLE por acceso (etapa y %), para saber qué ya está resuelto y qué falta.
+ * Reutiliza solicitudes_listar (sin modificarla) y devuelve todo como texto/números simples,
+ * porque google.script.run no puede transportar fechas (Date).
+ * @param {Object} filtros { sede, estado, busqueda } — todos opcionales
+ */
+function solicitudes_listarConAvance(token, filtros) {
+  filtros = filtros || {};
+  var lista = solicitudes_listar(token, { sede: filtros.sede, busqueda: filtros.busqueda }); // valida el área
+
+  var porcentajes = {};
+  mantenimiento_listarEstadosProgreso().forEach(function (e) { porcentajes[e.ESTADO] = Number(e.PORCENTAJE) || 0; });
+  var minimo = Math.min.apply(null, Object.keys(porcentajes).map(function (k) { return porcentajes[k]; }));
+
+  var accesosPorItem = {};
+  util_leerComoObjetos(HOJA_DETALLE_ACCESOS).forEach(function (d) {
+    if (d.REQUERIDO !== 'SI') return;
+    (accesosPorItem[d.ITEM_SOLICITUD] = accesosPorItem[d.ITEM_SOLICITUD] || []).push({
+      SISTEMA: d.SISTEMA, ESTADO: d.ESTADO, PORCENTAJE: porcentajes[d.ESTADO] || 0
+    });
+  });
+
+  var resultado = lista.map(function (s) {
+    var accesos = accesosPorItem[s.ITEM] || [];
+    var suma = accesos.reduce(function (a, x) { return a + x.PORCENTAJE; }, 0);
+    var avance = accesos.length ? Math.round(suma / accesos.length) : 0;
+    var todosEnLaPrimeraEtapa = accesos.every(function (x) { return x.PORCENTAJE <= minimo; });
+    return {
+      ITEM: s.ITEM,
+      RESOLUCION: s.RESOLUCION,
+      FECHA_RESOLUCION: util_fechaTexto(s.FECHA_RESOLUCION),
+      FECHA_SOLICITUD: util_fechaTexto(s.FECHA_SOLICITUD),
+      SEDE: s.SEDE,
+      DNI: util_dniTexto(s.DNI),
+      APELLIDOS: s.APELLIDOS,
+      NOMBRES: s.NOMBRES,
+      PERFIL: s.PERFIL,
+      NOTIFICADO: s.NOTIFICADO,
+      AVANCE: avance,
+      ESTADO_GENERAL: avance >= 100 ? 'Completado' : (accesos.length === 0 || todosEnLaPrimeraEtapa ? 'Pendiente' : 'En proceso'),
+      ACCESOS_RESUELTOS: accesos.filter(function (x) { return x.PORCENTAJE >= 100; }).length,
+      ACCESOS_TOTAL: accesos.length,
+      ACCESOS: accesos
+    };
+  });
+
+  if (filtros.estado) resultado = resultado.filter(function (r) { return r.ESTADO_GENERAL === filtros.estado; });
+  return resultado.reverse(); // la más reciente primero
+}
+
+/**
+ * Columna CREADO_POR (usuario que registró la solicitud). Si la hoja es anterior y no la tiene,
+ * la agrega sola en la columna 15. Devuelve el número de columna.
+ */
+function solicitudes_asegurarColumnaCreadoPor_() {
+  var hoja = util_obtenerHoja(HOJA_SOLICITUDES);
+  var encabezados = hoja.getRange(1, 1, 1, Math.max(hoja.getLastColumn(), 15)).getValues()[0];
+  var col = encabezados.indexOf('CREADO_POR') + 1;
+  if (col > 0) return col;
+  if (encabezados[14] !== '' && encabezados[14] != null) {
+    throw new Error('La columna 15 de Solicitudes ya tiene el encabezado "' + encabezados[14] + '"; no se pudo agregar CREADO_POR.');
+  }
+  hoja.getRange(1, 15).setValue('CREADO_POR').setFontWeight('bold');
+  return 15;
 }
