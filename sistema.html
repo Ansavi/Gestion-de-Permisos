@@ -26,7 +26,7 @@
   html,body{margin:0;padding:0;}
   body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Sans', sans-serif;font-size:14px;line-height:1.5;}
   h1,h2,h3{font-family:'Source Serif 4', serif;margin:0;color:var(--navy-dark);font-weight:600;}
-  .app{display:grid;grid-template-columns:240px 1fr;min-height:100vh;}
+  .app{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:100vh;}
 
   /* SIDEBAR */
   .sidebar{background:var(--navy);color:#EDEFEA;padding:28px 0 20px;display:flex;flex-direction:column;}
@@ -43,7 +43,7 @@
   .sidebar-foot{margin-top:auto;padding:16px 24px 0;border-top:1px solid rgba(255,255,255,0.14);font-size:11.5px;color:#9AA6B0;}
 
   /* MAIN */
-  main{padding:26px 32px 40px;max-width:1180px;display:flex;flex-direction:column;min-height:100vh;}
+  main{padding:26px 32px 40px;max-width:1180px;min-width:0;display:flex;flex-direction:column;min-height:100vh;}
   .content{flex:1;}
   .topbar{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
   .crumb{font-size:12px;color:var(--ink-soft);margin-bottom:4px;}
@@ -52,7 +52,30 @@
   .userchip b{color:var(--ink);}
 
   .grid{display:grid;grid-template-columns:1.55fr 1fr;gap:22px;align-items:start;}
-  @media (max-width:980px){.grid{grid-template-columns:1fr;} .app{grid-template-columns:1fr;} .sidebar{display:none;}}
+  /* ---- Responsivo: en pantallas angostas el menú es un panel que se abre con el botón ☰ ---- */
+  .menu-btn{display:none;align-items:center;justify-content:center;width:40px;height:40px;flex:none;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--navy-dark);cursor:pointer;}
+  .menu-btn svg{width:20px;height:20px;}
+  .menu-btn:focus-visible{outline:2px solid var(--navy);outline-offset:2px;}
+  .menu-fondo{display:none;}
+  .topbar-izq{display:flex;align-items:flex-end;gap:12px;min-width:0;}
+  .tabla-scroll{overflow-x:auto;}
+  @media (max-width:980px){
+    .app{grid-template-columns:minmax(0,1fr);}
+    .grid{grid-template-columns:minmax(0,1fr) !important;}
+    .sidebar{position:fixed;top:0;left:0;bottom:0;width:260px;max-width:84vw;z-index:70;overflow-y:auto;
+      transform:translateX(-100%);visibility:hidden;transition:transform .25s ease, visibility 0s .25s;}
+    body.menu-abierto .sidebar{transform:none;visibility:visible;transition:transform .25s ease, visibility 0s;box-shadow:6px 0 28px rgba(0,0,0,.3);}
+    .menu-fondo{display:block;position:fixed;inset:0;z-index:65;background:rgba(22,41,63,.5);opacity:0;pointer-events:none;transition:opacity .25s ease;}
+    body.menu-abierto .menu-fondo{opacity:1;pointer-events:auto;}
+    .menu-btn{display:inline-flex;}
+    main{padding:18px 16px 28px;}
+  }
+  @media (max-width:640px){
+    .row{grid-template-columns:1fr !important;}
+    #view-dashboard .row{grid-template-columns:1fr 1fr !important;}
+    .card{padding:18px 16px;}
+    .topbar h1{font-size:20px;}
+  }
 
   .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:22px 24px;}
   .card + .card{margin-top:18px;}
@@ -99,7 +122,7 @@
   .progress-track{height:8px;background:#E7E8E3;border-radius:20px;overflow:hidden;}
   .progress-fill{height:100%;background:linear-gradient(90deg,var(--navy),var(--gold));width:0%;transition:width .35s ease;}
 
-  .formfoot{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid var(--line);}
+  .formfoot{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid var(--line);}
 
   .audit-item{display:flex;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);}
   .audit-item:last-child{border-bottom:none;}
@@ -122,6 +145,26 @@
      Exentos: campos marcados con data-sin-mayus (IDs/enlaces de Drive, que distinguen mayúsculas). */
   input[type=text]:not([data-sin-mayus]){text-transform:uppercase;}
   td, .queue-item, #mantSedes, #mantPerfiles, #mantSistemas, #mantPlantillas{text-transform:uppercase;}
+  /* Detalle de avance por acceso */
+  .etapa{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:500;white-space:nowrap;background:#EEE;color:var(--ink-soft);text-transform:uppercase;}
+  .etapa-resuelto{background:var(--ok-soft);color:var(--ok);}
+  .etapa-enprogreso{background:#DCE7F3;color:var(--navy);}
+  .etapa-enespera{background:#EBE3F3;color:#5B3F86;}
+  .etapa-pendiente{background:var(--gold-soft);color:#7A5D1E;}
+  .det-caja{position:sticky;left:0;}
+  .det-fila{display:grid;grid-template-columns:minmax(150px,1.5fr) auto minmax(90px,1fr) 44px;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);}
+  .det-fila:last-child{border-bottom:none;}
+  .det-nombre{text-transform:uppercase;font-weight:500;color:var(--ink);}
+  .det-barra{height:8px;background:#E7E8E3;border-radius:20px;overflow:hidden;}
+  .det-relleno{height:100%;background:linear-gradient(90deg,var(--navy),var(--gold));}
+  .det-relleno.completo{background:var(--ok);}
+  .det-pct{font-size:12px;text-align:right;font-variant-numeric:tabular-nums;}
+  @media (max-width:980px){ .det-caja{width:calc(100vw - 100px);} }
+  @media (max-width:640px){
+    .det-fila{grid-template-columns:1fr auto;gap:6px 10px;}
+    .det-barra{grid-column:1 / 2;}
+    .det-pct{grid-column:2 / 3;}
+  }
   .view{display:none;}
   .view.active{display:block;}
   .adminsub{display:none;}
@@ -136,6 +179,7 @@
 <body data-base-url="<?= baseUrl ?>" data-token="<?= token ?>">
 
 <div class="app">
+  <div class="menu-fondo" onclick="cerrarMenu()"></div>
   <aside class="sidebar">
     <div class="brand">
       <div class="name">Gestión de Alta de Usuario</div>
@@ -153,6 +197,7 @@
     </nav>
     <div class="sidebar-foot">
       <div id="sesionInfo" style="margin-bottom:8px;">Conectado como <b id="sesionArea" style="color:#fff;"></b></div>
+      <a href="#" id="navCambiarClave" style="display:block;color:#C7D0D9;text-decoration:none;margin-bottom:6px;" onclick="cambiarMiClave();return false;">Cambiar mi contraseña</a>
       <a href="#" id="navLogout" style="color:#E7B8B4;text-decoration:none;" onclick="cerrarSesion();return false;">Cerrar sesión</a>
     </div>
   </aside>
@@ -160,9 +205,14 @@
   <main>
   <div class="content">
     <div class="topbar">
-      <div>
-        <div class="crumb" id="crumb">Panel</div>
-        <h1 id="pageTitle">Cargando…</h1>
+      <div class="topbar-izq">
+        <button class="menu-btn" id="menuBtn" type="button" onclick="alternarMenu()" aria-label="Abrir o cerrar el menú" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+        <div>
+          <div class="crumb" id="crumb">Panel</div>
+          <h1 id="pageTitle">Cargando…</h1>
+        </div>
       </div>
       <div class="userchip" id="userchip">Sesión: <b></b></div>
     </div>
@@ -261,81 +311,28 @@
       <div class="adminsub" id="admin-sub-list">
         <div class="card">
           <h2>Mis solicitudes registradas</h2>
-          <div class="hint">Aquí ves el avance general de cada solicitud que registraste. El detalle de qué está gestionando Informática internamente no se muestra en esta vista.</div>
+          <div class="hint">Aquí ves solo las solicitudes que tú registraste. Los accesos se entregan de forma escalonada, por eso cada solicitud muestra su estado: <b>Pendiente</b> (ningún acceso ha avanzado todavía), <b>En proceso</b> (algunos ya avanzaron o se entregaron y otros faltan) o <b>Completado</b> (todos resueltos). Con "Ver detalle" ves el avance de cada acceso.</div>
 
-          <div class="row" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:18px;">
-            <div class="field"><label>Sede</label><select><option>Todas</option><option>CARABAYLLO</option><option>INDEPENDENCIA</option></select></div>
-            <div class="field"><label>Estado</label><select><option>Todos</option><option>Pendiente</option><option>En proceso</option><option>Completado</option></select></div>
-            <div class="field"><label>Buscar por DNI o apellido</label><input type="text" placeholder="Ej. 07452136 / Pérez"></div>
+          <div class="row" style="grid-template-columns:1fr 1fr 1.4fr;margin-bottom:18px;">
+            <div class="field"><label>Sede</label><select id="filtroSede" onchange="solCargar()"><option value="">Todas</option><option>CARABAYLLO</option><option>INDEPENDENCIA</option></select></div>
+            <div class="field"><label>Estado</label><select id="filtroEstado" onchange="solCargar()"><option value="">Todos</option><option>Pendiente</option><option>En proceso</option><option>Completado</option></select></div>
+            <div class="field"><label>Buscar por DNI o apellido</label><input type="text" id="filtroBusqueda" placeholder="Ej. 07452136 / PÉREZ" oninput="solBuscarConDemora()"></div>
           </div>
 
-          <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
-            <thead>
-              <tr style="text-align:left;border-bottom:1px solid var(--line);color:var(--ink-soft);">
-                <th style="padding:8px 6px;">Resolución</th>
-                <th style="padding:8px 6px;">Fecha solicitud</th>
-                <th style="padding:8px 6px;">DNI</th>
-                <th style="padding:8px 6px;">Apellidos y nombres</th>
-                <th style="padding:8px 6px;">Perfil</th>
-                <th style="padding:8px 6px;">Sede</th>
-                <th style="padding:8px 6px;width:140px;">Avance</th>
-                <th style="padding:8px 6px;"></th>
-              </tr>
-            </thead>
-            <tbody id="tablaMisSolicitudes">
-              <tr style="border-bottom:1px solid var(--line);">
-                <td style="padding:10px 6px;">RESOL-2026-0142</td><td style="padding:10px 6px;">03/09/2026</td><td style="padding:10px 6px;">07452136</td>
-                <td style="padding:10px 6px;">Pérez Ramírez, Juan</td><td style="padding:10px 6px;">ANALISTA</td><td style="padding:10px 6px;">Carabayllo</td>
-                <td style="padding:10px 6px;">
-                  <div class="progress-track" style="height:6px;"><div class="progress-fill" style="width:55%;"></div></div>
-                  <span style="font-size:11px;color:var(--ink-soft);">55%</span>
-                </td>
-                <td style="padding:10px 6px;"><button class="btn btn-ghost btn-sm" onclick="toggleDetalle('det1')">Ver avance</button></td>
-              </tr>
-              <tr id="det1" style="display:none;background:#FAFAF7;">
-                <td colspan="8" style="padding:12px 16px;">
-                  <div class="lockednote" style="margin-top:0;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
-                    Avance general: 55%. El detalle por sistema es gestionado internamente por Informática.
-                  </div>
-                </td>
-              </tr>
-              <tr style="border-bottom:1px solid var(--line);">
-                <td style="padding:10px 6px;">RESOL-2026-0139</td><td style="padding:10px 6px;">01/09/2026</td><td style="padding:10px 6px;">41209988</td>
-                <td style="padding:10px 6px;">Quispe Torres, Ana</td><td style="padding:10px 6px;">SECRETARIO</td><td style="padding:10px 6px;">Independencia</td>
-                <td style="padding:10px 6px;">
-                  <div class="progress-track" style="height:6px;"><div class="progress-fill" style="width:100%;"></div></div>
-                  <span style="font-size:11px;color:var(--ok);">100% · Completado</span>
-                </td>
-                <td style="padding:10px 6px;"><button class="btn btn-ghost btn-sm" onclick="toggleDetalle('det2')">Ver avance</button></td>
-              </tr>
-              <tr id="det2" style="display:none;background:#FAFAF7;">
-                <td colspan="8" style="padding:12px 16px;">
-                  <div class="lockednote" style="margin-top:0;background:var(--ok-soft);border-color:#BFDBCB;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 13l4 4L19 7"/></svg>
-                    Solicitud completada. Todos los accesos requeridos fueron habilitados.
-                  </div>
-                </td>
-              </tr>
-              <tr style="border-bottom:1px solid var(--line);">
-                <td style="padding:10px 6px;">RESOL-2026-0135</td><td style="padding:10px 6px;">28/08/2026</td><td style="padding:10px 6px;">10023344</td>
-                <td style="padding:10px 6px;">Rojas Medina, Luis</td><td style="padding:10px 6px;">JUEZ</td><td style="padding:10px 6px;">Carabayllo</td>
-                <td style="padding:10px 6px;">
-                  <div class="progress-track" style="height:6px;"><div class="progress-fill" style="width:15%;"></div></div>
-                  <span style="font-size:11px;color:var(--ink-soft);">15%</span>
-                </td>
-                <td style="padding:10px 6px;"><button class="btn btn-ghost btn-sm" onclick="toggleDetalle('det3')">Ver avance</button></td>
-              </tr>
-              <tr id="det3" style="display:none;background:#FAFAF7;">
-                <td colspan="8" style="padding:12px 16px;">
-                  <div class="lockednote" style="margin-top:0;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
-                    Avance general: 15%. El detalle por sistema es gestionado internamente por Informática.
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="tabla-scroll">
+            <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+              <thead>
+                <tr style="text-align:left;border-bottom:1px solid var(--line);color:var(--ink-soft);">
+                  <th style="padding:8px 6px;">Resolución</th><th style="padding:8px 6px;">Fecha solicitud</th><th style="padding:8px 6px;">DNI</th>
+                  <th style="padding:8px 6px;">Apellidos y nombres</th><th style="padding:8px 6px;">Perfil</th><th style="padding:8px 6px;">Sede</th>
+                  <th style="padding:8px 6px;">Estado</th><th style="padding:8px 6px;">Avance</th><th style="padding:8px 6px;"></th>
+                </tr>
+              </thead>
+              <tbody id="tablaMisSolicitudes">
+                <tr><td colspan="9" style="padding:12px 6px;color:var(--ink-soft);">Cargando…</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div><!-- /admin-sub-list -->
 
@@ -390,7 +387,7 @@
     <div class="view" id="view-usuarios">
       <div class="card">
         <h2>Usuarios del sistema</h2>
-        <div class="hint">Personal de Administración e Informática con acceso a esta herramienta. El <b>Área</b> decide qué opciones del menú ve cada persona. Las contraseñas nunca se guardan ni se vuelven a mostrar: al crear un usuario o restablecer su clave se genera una clave temporal que aparece una sola vez.</div>
+        <div class="hint">Personal de Administración e Informática con acceso a esta herramienta. El <b>Área</b> decide qué opciones del menú ve cada persona. Las contraseñas nunca se guardan ni se vuelven a mostrar: al crear un usuario se genera una clave temporal que aparece una sola vez; al restablecer una clave, tú escribes la nueva.</div>
         <div id="usuCredBox" style="display:none;margin-bottom:14px;padding:12px 14px;background:var(--gold-soft);border:1px solid #DCC581;border-radius:8px;font-size:12.5px;"></div>
         <div style="overflow-x:auto;">
           <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
@@ -691,10 +688,6 @@
   }
 
 
-  function toggleDetalle(id){
-    const row = document.getElementById(id);
-    row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
-  }
 
   function generarCredenciales(){
     const apellidos = document.getElementById('apellidosInput').value.trim().split(' ')[0] || 'apellido';
@@ -747,6 +740,7 @@
   };
 
   function goTo(destino){
+    cerrarMenu();
     const top = TOP_VIEW[destino];
     ['admin','it','usuarios','dashboard','mantenimiento','reportes','auditoria'].forEach(id => {
       document.getElementById('view-'+id).classList.toggle('active', id===top);
@@ -760,6 +754,7 @@
     document.getElementById('pageTitle').textContent = TITULOS[destino];
     if (destino === 'mantenimiento') mantCargar();
     if (destino === 'usuarios') usuCargar();
+    if (destino === 'admin-list') solCargar();
   }
 
   function cerrarSesion(){
@@ -908,19 +903,27 @@
       if (c.tipo === 'checkbox') {
         return '<label class="req-row" style="border:none;padding:6px 2px;"><input type="checkbox" id="mf_' + c.id + '"' + (c.valor ? ' checked' : '') + '> ' + esc(c.label) + '</label>';
       }
+      if (c.tipo === 'nota') {
+        return '<div class="hint" style="margin-bottom:12px;">' + esc(c.texto) + '</div>';
+      }
+      if (c.tipo === 'password') {
+        return '<div class="field" style="margin-bottom:12px;"><label>' + esc(c.label) + '</label><input type="password" id="mf_' + c.id + '" autocomplete="new-password"></div>';
+      }
       return '<div class="field" style="margin-bottom:12px;"><label>' + esc(c.label) + '</label><input type="text" id="mf_' + c.id + '" value="' + esc(c.valor || '') + '" placeholder="' + esc(c.placeholder || '') + '"' + (c.sinMayus ? ' data-sin-mayus' : '') + '></div>';
     }).join('');
     modalAlGuardar = () => {
       const v = {};
       campos.forEach(c => {
+        if (c.tipo === 'nota') return;
         const el = document.getElementById('mf_' + c.id);
-        v[c.id] = c.tipo === 'checkbox' ? el.checked : el.value.trim();
+        // las contraseñas se toman tal cual (sin recortar espacios)
+        v[c.id] = c.tipo === 'checkbox' ? el.checked : (c.tipo === 'password' ? el.value : el.value.trim());
       });
       alGuardar(v);
     };
     document.getElementById('modalMantGuardar').disabled = false;
     document.getElementById('modalMant').style.display = 'flex';
-    const primero = document.querySelector('#modalMantCampos input[type=text], #modalMantCampos select');
+    const primero = document.querySelector('#modalMantCampos input[type=text], #modalMantCampos input[type=password], #modalMantCampos select');
     if (primero) primero.focus();
   }
 
@@ -1158,11 +1161,17 @@
 
   function usuRestablecer(i){
     const u = USU.lista[i];
-    if (!confirm('¿Restablecer la clave de "' + u.USUARIO + '"? La clave actual dejará de funcionar y se generará una temporal.')) return;
-    google.script.run
-      .withSuccessHandler(r => { usuMostrarClave('Clave restablecida', r.usuario, r.claveTemporal); mostrarToast('Clave restablecida'); })
-      .withFailureHandler(err => alert('No se pudo restablecer la clave: ' + err.message))
-      .usuarios_restablecerClave(sessionToken, u.ID_USUARIO);
+    abrirModal('Restablecer clave — ' + u.USUARIO, [
+      { tipo: 'nota', texto: 'Escribe la nueva contraseña de esta persona. La clave anterior dejará de funcionar. Mínimo 8 caracteres, combinando letras y números.' },
+      { id: 'nueva', tipo: 'password', label: 'Nueva contraseña' },
+      { id: 'repetir', tipo: 'password', label: 'Repite la nueva contraseña' }
+    ], v => {
+      if (!v.nueva || !v.repetir) return modalError('Completa ambos campos.');
+      if (v.nueva !== v.repetir) return modalError('Las contraseñas no coinciden.');
+      const error = validarClaveJS(v.nueva, u.USUARIO);
+      if (error) return modalError(error);
+      claveEjecutar('usuarios_restablecerClave', [sessionToken, u.ID_USUARIO, v.nueva], 'Clave actualizada para ' + u.USUARIO);
+    });
   }
 
   function usuCambiarEstado(i){
@@ -1176,6 +1185,144 @@
       .withSuccessHandler(() => { usuCargar(); mostrarToast('Usuario ' + (nuevo === 'Activo' ? 'activado' : 'bloqueado')); })
       .withFailureHandler(err => alert('No se pudo cambiar el estado: ' + err.message))
       .usuarios_cambiarEstado(sessionToken, u.ID_USUARIO, nuevo);
+  }
+
+  // ============ MENÚ RESPONSIVO ============
+  function alternarMenu(){
+    const abierto = document.body.classList.toggle('menu-abierto');
+    document.getElementById('menuBtn').setAttribute('aria-expanded', abierto ? 'true' : 'false');
+  }
+  function cerrarMenu(){
+    document.body.classList.remove('menu-abierto');
+    const b = document.getElementById('menuBtn');
+    if (b) b.setAttribute('aria-expanded', 'false');
+  }
+  window.addEventListener('resize', () => { if (window.innerWidth > 980) cerrarMenu(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarMenu(); });
+
+  // ============ CONTRASEÑAS (la persona elige su clave; no hay claves aleatorias al restablecer) ============
+  function validarClaveJS(clave, usuario){
+    if (clave.length < 8) return 'La contraseña debe tener al menos 8 caracteres.';
+    if (clave.length > 64) return 'La contraseña no puede pasar de 64 caracteres.';
+    if (!/[A-Za-z]/.test(clave) || !/[0-9]/.test(clave)) return 'La contraseña debe combinar letras y números.';
+    if (usuario && clave.toLowerCase() === String(usuario).toLowerCase()) return 'La contraseña no puede ser igual al usuario.';
+    if (clave.toLowerCase() === 'admin123') return 'Elige una contraseña distinta a la inicial del sistema.';
+    return null;
+  }
+
+  function claveEjecutar(nombreFuncion, args, mensajeOk){
+    document.getElementById('modalMantGuardar').disabled = true;
+    google.script.run
+      .withSuccessHandler(() => { cerrarModal(); mostrarToast(mensajeOk); })
+      .withFailureHandler(err => modalError(err.message))
+      [nombreFuncion](...args);
+  }
+
+  function cambiarMiClave(){
+    cerrarMenu();
+    if (!sessionToken) { alert('Disponible al iniciar sesión.'); return; }
+    abrirModal('Cambiar mi contraseña', [
+      { id: 'actual', tipo: 'password', label: 'Contraseña actual' },
+      { id: 'nueva', tipo: 'password', label: 'Nueva contraseña (mínimo 8 caracteres, con letras y números)' },
+      { id: 'repetir', tipo: 'password', label: 'Repite la nueva contraseña' }
+    ], v => {
+      if (!v.actual || !v.nueva || !v.repetir) return modalError('Completa los tres campos.');
+      if (v.nueva !== v.repetir) return modalError('La nueva contraseña y su confirmación no coinciden.');
+      if (v.nueva === v.actual) return modalError('La nueva contraseña debe ser distinta de la actual.');
+      const error = validarClaveJS(v.nueva, sesionActual && sesionActual.usuario);
+      if (error) return modalError(error);
+      claveEjecutar('usuarios_cambiarMiClave', [sessionToken, v.actual, v.nueva], 'Contraseña actualizada');
+    });
+  }
+
+  // ============ GESTIÓN DE SOLICITUDES (Administración): avance general y por acceso ============
+  const SOL = { lista: [] };
+  let solPeticion = 0, solTemporizador = null;
+
+  function solBuscarConDemora(){
+    clearTimeout(solTemporizador);
+    solTemporizador = setTimeout(solCargar, 350);
+  }
+
+  function solCargar(){
+    const tbody = document.getElementById('tablaMisSolicitudes');
+    const fila = (texto, color) => '<tr><td colspan="9" style="padding:12px 6px;color:' + color + ';text-transform:none;">' + texto + '</td></tr>';
+    if (!sessionToken) { tbody.innerHTML = fila('Disponible al iniciar sesión.', 'var(--ink-soft)'); return; }
+    tbody.innerHTML = fila('Cargando…', 'var(--ink-soft)');
+    const filtros = {
+      sede: document.getElementById('filtroSede').value,
+      estado: document.getElementById('filtroEstado').value,
+      busqueda: document.getElementById('filtroBusqueda').value.trim()
+    };
+    const mia = ++solPeticion; // si llega una respuesta vieja después de una nueva, se ignora
+    google.script.run
+      .withSuccessHandler(filas => { if (mia !== solPeticion) return; SOL.lista = filas || []; solPintar(); })
+      .withFailureHandler(err => { if (mia !== solPeticion) return; tbody.innerHTML = fila('No se pudo cargar: ' + esc(err.message), 'var(--warn)'); })
+      .solicitudes_listarConAvance(sessionToken, filtros);
+  }
+
+  function estadoGeneralPill(e){
+    const clase = e === 'Completado' ? 'etapa-resuelto' : (e === 'En proceso' ? 'etapa-enprogreso' : 'etapa-pendiente');
+    return '<span class="etapa ' + clase + '">' + esc(e) + '</span>';
+  }
+
+  function etapaClase(estado){
+    const e = String(estado || '').toLowerCase();
+    if (e === 'resuelto') return 'etapa-resuelto';
+    if (e === 'en progreso') return 'etapa-enprogreso';
+    if (e === 'en espera') return 'etapa-enespera';
+    return '';
+  }
+
+  function solFilaDetalle(s, i){
+    let cuerpo;
+    if (!s.ACCESOS_TOTAL) {
+      cuerpo = '<div style="color:var(--ink-soft);">' +
+        (s.NOTIFICADO === 'SI' ? 'Esta solicitud no tiene accesos registrados.' : 'Todavía no se notificó a Informática.') + '</div>';
+    } else {
+      cuerpo = '<div style="margin-bottom:6px;color:var(--ink-soft);">Avance general: <b style="color:var(--navy-dark);">' + s.AVANCE + '%</b> · ' +
+        s.ACCESOS_RESUELTOS + ' de ' + s.ACCESOS_TOTAL + (s.ACCESOS_TOTAL === 1 ? ' acceso resuelto' : ' accesos resueltos') +
+        (s.ACCESOS_TOTAL > s.ACCESOS_RESUELTOS ? ' · <b>' + (s.ACCESOS_TOTAL - s.ACCESOS_RESUELTOS) + (s.ACCESOS_TOTAL - s.ACCESOS_RESUELTOS === 1 ? ' pendiente' : ' pendientes') + '</b>' : '') +
+        (s.AVANCE >= 100 ? ' — <b style="color:var(--ok);">solicitud completa</b>' : '') + '</div>' +
+        s.ACCESOS.map(a => {
+          const completo = a.PORCENTAJE >= 100;
+          return '<div class="det-fila"><span class="det-nombre">' + esc(a.SISTEMA) + '</span>' +
+            '<span class="etapa ' + etapaClase(a.ESTADO) + '">' + esc(a.ESTADO) + '</span>' +
+            '<div class="det-barra"><div class="det-relleno' + (completo ? ' completo' : '') + '" style="width:' + a.PORCENTAJE + '%;"></div></div>' +
+            '<span class="det-pct">' + a.PORCENTAJE + '%</span></div>';
+        }).join('');
+    }
+    return '<tr id="solDet' + i + '" style="display:none;background:#FAFAF7;"><td colspan="9" style="padding:12px 16px;text-transform:none;"><div class="det-caja">' + cuerpo + '</div></td></tr>';
+  }
+
+  function solPintar(){
+    const tbody = document.getElementById('tablaMisSolicitudes');
+    if (!SOL.lista.length) {
+      tbody.innerHTML = '<tr><td colspan="9" style="padding:12px 6px;color:var(--ink-soft);text-transform:none;">No hay solicitudes con esos filtros.</td></tr>';
+      return;
+    }
+    const td = 'padding:10px 6px;';
+    tbody.innerHTML = SOL.lista.map((s, i) => {
+      const completo = s.AVANCE >= 100;
+      const resumen = s.ACCESOS_TOTAL ? (s.ACCESOS_RESUELTOS + ' de ' + s.ACCESOS_TOTAL + (s.ACCESOS_TOTAL === 1 ? ' resuelto' : ' resueltos')) : 'sin accesos';
+      return '<tr style="border-bottom:1px solid var(--line);">' +
+        '<td style="' + td + '">' + esc(s.RESOLUCION) + '</td>' +
+        '<td style="' + td + '">' + esc(s.FECHA_SOLICITUD || '—') + '</td>' +
+        '<td style="' + td + '">' + esc(s.DNI) + '</td>' +
+        '<td style="' + td + '">' + esc(s.APELLIDOS) + ', ' + esc(s.NOMBRES) + '</td>' +
+        '<td style="' + td + '">' + esc(s.PERFIL) + '</td><td style="' + td + '">' + esc(s.SEDE) + '</td>' +
+        '<td style="' + td + '">' + estadoGeneralPill(s.ESTADO_GENERAL) + '</td>' +
+        '<td style="' + td + 'min-width:150px;">' +
+          '<div class="progress-track" style="height:6px;"><div class="progress-fill" style="width:' + s.AVANCE + '%;' + (completo ? 'background:var(--ok);' : '') + '"></div></div>' +
+          '<span style="font-size:11px;text-transform:none;color:' + (completo ? 'var(--ok)' : 'var(--ink-soft)') + ';">' + s.AVANCE + '% · ' + esc(resumen) + '</span></td>' +
+        '<td style="' + td + '"><button class="btn btn-ghost btn-sm" onclick="solToggle(' + i + ')">Ver detalle</button></td></tr>' +
+        solFilaDetalle(s, i);
+    }).join('');
+  }
+
+  function solToggle(i){
+    const fila = document.getElementById('solDet' + i);
+    if (fila) fila.style.display = fila.style.display === 'none' ? 'table-row' : 'none';
   }
 
   // Todo campo de texto se convierte a MAYÚSCULA mientras se escribe,
