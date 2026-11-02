@@ -108,3 +108,34 @@ function util_fechaHoraAhora() {
 function util_mayus(texto) {
   return String(texto == null ? '' : texto).trim().toUpperCase();
 }
+
+/**
+ * Reglas de una contraseña elegida por una persona. Devuelve el mensaje de error o null si es válida.
+ * (La misma regla se valida en pantalla; aquí se vuelve a validar porque el servidor no confía en el navegador.)
+ */
+function util_validarClaveNueva_(clave, usuario) {
+  clave = String(clave == null ? '' : clave);
+  if (clave.length < 8) return 'La contraseña debe tener al menos 8 caracteres.';
+  if (clave.length > 64) return 'La contraseña no puede pasar de 64 caracteres.';
+  if (!/[A-Za-z]/.test(clave) || !/[0-9]/.test(clave)) return 'La contraseña debe combinar letras y números.';
+  if (String(usuario || '').toLowerCase() === clave.toLowerCase()) return 'La contraseña no puede ser igual al usuario.';
+  if (clave.toLowerCase() === 'admin123') return 'Elige una contraseña distinta a la inicial del sistema.';
+  return null;
+}
+
+/**
+ * Las fechas que Sheets guarda como fecha real (objeto Date) NO pueden viajar al navegador
+ * con google.script.run: hacen fallar la llamada. Por eso se convierten a texto dd/MM/yyyy.
+ */
+function util_fechaTexto(valor) {
+  if (Object.prototype.toString.call(valor) === '[object Date]') {
+    return Utilities.formatDate(valor, Session.getScriptTimeZone(), 'dd/MM/yyyy');
+  }
+  return valor == null ? '' : String(valor);
+}
+
+/** DNI como texto de 8 dígitos (recupera ceros a la izquierda si la celda quedó como número). */
+function util_dniTexto(valor) {
+  var digitos = String(valor == null ? '' : valor).replace(/\D/g, '');
+  return digitos ? ('00000000' + digitos).slice(-8) : '';
+}
