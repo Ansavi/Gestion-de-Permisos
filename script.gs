@@ -54,6 +54,7 @@ function diag_probarLoginAdmin() {
 /** Ejecuta todo lo necesario para dejar el sistema listo para usarse. */
 function config_inicializarSistema() {
   var hojas = config_crearHojasYCampos();
+  config_agregarColumnaCreadoPor();
   var carpetas = config_crearCarpetas();
   var admin = config_crearUsuarioAdminInicial();
   Logger.log('Hojas: ' + JSON.stringify(hojas));
@@ -71,7 +72,7 @@ function config_inicializarSistema() {
 function config_crearHojasYCampos() {
   var definicion = {
     'Solicitudes': ['ITEM','RESOLUCION','FECHA_RESOLUCION','FECHA_SOLICITUD','ADJUNTO_URL',
-      'SEDE','DNI','APELLIDOS','NOMBRES','PERFIL','AVANCE_%','ESTADO_GENERAL','NOTIFICADO','FECHA_NOTIFICACION'],
+      'SEDE','DNI','APELLIDOS','NOMBRES','PERFIL','AVANCE_%','ESTADO_GENERAL','NOTIFICADO','FECHA_NOTIFICACION','CREADO_POR'],
 
     'Detalle_Accesos': ['ID_DETALLE','ITEM_SOLICITUD','SISTEMA','REQUERIDO','ESTADO',
       'VALOR_ASIGNADO','FECHA_ACTUALIZACION','ACTUALIZADO_POR'],
@@ -273,4 +274,40 @@ function config_convertirTextosAMayusculas() {
     auditoria_registrar('sistema', 'Textos convertidos a mayúsculas (config_convertirTextosAMayusculas)', '', 'Sistema', JSON.stringify(resumen));
   } catch (e) { /* si Auditoria aún no existe, no bloquea la conversión */ }
   return resumen;
+}
+
+
+/**
+ * Agrega la columna CREADO_POR a una hoja Solicitudes que ya existía (idempotente).
+ * Es la que permite que cada persona de Administración vea solo las solicitudes que registró.
+ * (solicitudes_crear también la agrega sola si falta; esta función es para dejarla lista de antemano.)
+ */
+function config_agregarColumnaCreadoPor() {
+  var col = solicitudes_asegurarColumnaCreadoPor_();
+  Logger.log('CREADO_POR está en la columna ' + col + ' de Solicitudes.');
+  return col;
+}
+
+/**
+ * OPCIONAL: las solicitudes registradas ANTES de existir CREADO_POR no tienen dueño, así que
+ * Administración no las ve. Para adjudicarlas a una persona: escribe su usuario en usuarioDestino
+ * y ejecuta esta función una vez. No toca las que ya tienen dueño.
+ */
+function config_asignarCreadorASolicitudesAntiguas() {
+  var usuarioDestino = ''; // ← escribe aquí el usuario de Administración (ej. 'mvargas') y ejecuta
+  usuarioDestino = String(usuarioDestino).trim().toLowerCase();
+  if (!usuarioDestino) {
+    throw new Error('Edita la función y escribe en usuarioDestino el usuario de Administración que será dueño de las solicitudes antiguas.');
+  }
+  var existe = util_leerComoObjetos(HOJA_CREDENCIALES).some(function (u) {
+    return String(u.USUARIO).toLowerCase() === usuarioDestino && u.AREA === 'Administración';
+  });
+  if (!existe) throw new Error('No existe un usuario de Administración llamado "' + usuarioDestino + '".');
+
+  var col = solicitudes_asegurarColumnaCreadoPor_();
+  var hoja = util_obtenerHoja(HOJA_SOLICITUDES);
+  var sinDueno = util_leerComoObjetos(HOJA_SOLICITUDES).filter(function (s) { return !String(s.CREADO_POR || '').trim(); });
+  sinDueno.forEach(function (s) { hoja.getRange(s._fila, col).setValue(usuarioDestino); });
+  Logger.log(sinDueno.length + ' solicitudes asignadas a "' + usuarioDestino + '".');
+  return { asignadas: sinDueno.length };
 }
