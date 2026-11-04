@@ -311,3 +311,87 @@ function config_asignarCreadorASolicitudesAntiguas() {
   Logger.log(sinDueno.length + ' solicitudes asignadas a "' + usuarioDestino + '".');
   return { asignadas: sinDueno.length };
 }
+
+// ======================================================================
+// LIMPIEZA PARA EMPEZAR A USAR EL SISTEMA
+// ======================================================================
+
+/** Hojas que guardan datos de USO (no son catálogos): se vacían al limpiar. */
+var HOJAS_DE_USO_ = ['Solicitudes', 'Detalle_Accesos', 'Auditoria'];
+
+/** Cuenta las filas de datos de una hoja (sin contar el encabezado). */
+function config_contarFilas_(nombreHoja) {
+  var hoja = SS.getSheetByName(nombreHoja);
+  return hoja ? Math.max(hoja.getLastRow() - 1, 0) : 0;
+}
+
+/** Borra el contenido de las filas de datos y conserva encabezados y formato. Devuelve cuántas filas vació. */
+function config_vaciarHoja_(nombreHoja) {
+  var hoja = SS.getSheetByName(nombreHoja);
+  if (!hoja) return 0;
+  var filas = hoja.getLastRow() - 1;
+  if (filas < 1) return 0;
+  hoja.getRange(2, 1, filas, hoja.getLastColumn()).clearContent();
+  return filas;
+}
+
+/**
+ * VISTA PREVIA — ejecútala PRIMERO. No borra nada: solo muestra (en Ver → Registros de ejecución)
+ * qué se borraría al correr config_limpiarSistema.
+ */
+function config_limpiarSistema_vistaPrevia() {
+  var informe = {};
+  HOJAS_DE_USO_.forEach(function (nombre) {
+    informe[nombre] = config_contarFilas_(nombre) + ' filas se borrarían';
+  });
+
+  var otros = util_leerComoObjetos(HOJA_CREDENCIALES)
+    .filter(function (u) { return String(u.USUARIO).toLowerCase() !== 'admin'; })
+    .map(function (u) { return u.USUARIO; });
+  informe['Credenciales'] = (otros.length ? 'se borrarían ' + otros.length + ' usuario(s): ' + otros.join(', ') + '. ' : 'no hay otros usuarios. ') +
+    '"admin" queda con la clave admin123.';
+  informe['Se conserva'] = 'Mantenimiento_* (sedes, perfiles, sistemas, etapas de progreso y plantillas) y las carpetas de Drive';
+
+  Logger.log(JSON.stringify(informe, null, 2));
+  return informe;
+}
+
+/**
+ * LIMPIEZA — deja el sistema listo para empezar a usarse:
+ *  - Vacía Solicitudes, Detalle_Accesos y Auditoria.
+ *  - Deja en Credenciales SOLO al usuario admin, con la clave admin123 (se restablece aunque
+ *    la hayas cambiado).
+ *  - NO toca los catálogos de Mantenimiento_* ni las carpetas de Drive: sin sedes, perfiles,
+ *    sistemas y etapas de progreso el sistema no puede calcular avances ni armar formularios.
+ *
+ * Antes de borrar hace una COPIA de respaldo del Spreadsheet en tu Drive; si la copia falla,
+ * no se borra nada. Ejecuta primero config_limpiarSistema_vistaPrevia.
+ */
+function config_limpiarSistema() {
+  var candado = LockService.getScriptLock();
+  candado.waitLock(30000); // nadie guarda datos mientras se limpia
+  try {
+    // 1) Respaldo (si falla, se detiene antes de borrar)
+    var marca = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm');
+    var respaldo = DriveApp.getFileById(SPREADSHEET_ID).makeCopy('RESPALDO antes de limpiar — ' + marca);
+
+    // 2) Vaciar datos de uso y usuarios
+    var resumen = {};
+    HOJAS_DE_USO_.concat([HOJA_CREDENCIALES]).forEach(function (nombre) {
+      resumen[nombre] = config_vaciarHoja_(nombre) + ' filas vaciadas';
+    });
+
+    // 3) Dejar solo admin / admin123 (se vuelve a crear desde cero, con hash y sal nuevos)
+    var admin = config_crearUsuarioAdminInicial();
+    config_agregarColumnaCreadoPor();
+
+    // 4) Primera línea de la auditoría nueva
+    auditoria_registrar('admin', 'Sistema limpiado para empezar a usarse (config_limpiarSistema)', '', 'Sistema', JSON.stringify(resumen));
+
+    var resultado = { resumen: resumen, admin: admin, respaldo: respaldo.getUrl() };
+    Logger.log('Limpieza terminada: ' + JSON.stringify(resultado, null, 2));
+    return resultado;
+  } finally {
+    candado.releaseLock();
+  }
+}
