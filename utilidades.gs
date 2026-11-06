@@ -139,3 +139,11 @@ function util_dniTexto(valor) {
   var digitos = String(valor == null ? '' : valor).replace(/\D/g, '');
   return digitos ? ('00000000' + digitos).slice(-8) : '';
 }
+
+/** Igual que util_fechaTexto, pero con la hora (dd/MM/yyyy HH:mm). Para eventos de auditoría. */
+function util_fechaHoraTexto(valor) {
+  if (Object.prototype.toString.call(valor) === '[object Date]') {
+    return Utilities.formatDate(valor, Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm');
+  }
+  return valor == null ? '' : String(valor);
+}
