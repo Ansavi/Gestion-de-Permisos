@@ -36,3 +36,14 @@ function auditoria_listar(limite) {
   filas.reverse();
   return filas.slice(0, limite || 200);
 }
+
+/** Eventos recientes para la pantalla Auditoría (solo Informática). Devuelve texto, no fechas Date. */
+function auditoria_listarRecientes(token, limite) {
+  login_exigirArea_(token, 'Informática');
+  return util_leerComoObjetos(HOJA_AUDITORIA).reverse().slice(0, limite || 100).map(function (r) {
+    return {
+      FECHA_HORA: util_fechaHoraTexto(r.FECHA_HORA), USUARIO: r.USUARIO, AREA: r.AREA,
+      ACCION: r.ACCION, ITEM_AFECTADO: r.ITEM_AFECTADO || '', DETALLE: r.DETALLE || ''
+    };
+  });
+}
