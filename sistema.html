@@ -268,12 +268,12 @@
             <h2>¿Qué accesos requiere?</h2>
             <div class="hint">Marca únicamente los accesos que este usuario necesita. Informática se encargará de habilitarlos.</div>
             <div class="req-list" id="reqList">
-              <label class="req-row"><input type="checkbox" class="req-check" checked data-name="USUARIO DE RED"> USUARIO DE RED</label>
-              <label class="req-row"><input type="checkbox" class="req-check" checked data-name="CORREO ELECTRÓNICO CORPORATIVO"> CORREO ELECTRÓNICO CORPORATIVO</label>
+              <label class="req-row"><input type="checkbox" class="req-check" data-name="USUARIO DE RED"> USUARIO DE RED</label>
+              <label class="req-row"><input type="checkbox" class="req-check" data-name="CORREO ELECTRÓNICO CORPORATIVO"> CORREO ELECTRÓNICO CORPORATIVO</label>
               <label class="req-row"><input type="checkbox" class="req-check" data-name="SISTEMA DE EXPEDIENTES (SIJ)"> SISTEMA DE EXPEDIENTES (SIJ)</label>
               <label class="req-row"><input type="checkbox" class="req-check" data-name="CERTIFICADO ELECTRÓNICO"> CERTIFICADO ELECTRÓNICO</label>
               <label class="req-row"><input type="checkbox" class="req-check" data-name="WHATSAPP WEB"> WHATSAPP WEB</label>
-              <label class="req-row"><input type="checkbox" class="req-check" checked data-name="VPN 24HRS"> VPN 24HRS</label>
+              <label class="req-row"><input type="checkbox" class="req-check" data-name="VPN 24HRS"> VPN 24HRS</label>
               <label class="req-row"><input type="checkbox" class="req-check" data-name="AMAUTA PRO"> AMAUTA PRO</label>
               <label class="req-row"><input type="checkbox" class="req-check" data-name="RENIEC"> RENIEC</label>
             </div>
@@ -286,23 +286,8 @@
 
         <div>
           <div class="card">
-            <h2>Avance de la solicitud</h2>
-            <div class="progress-wrap">
-              <div class="progress-top"><span>Avance general</span><b id="progressLabelAdmin">0%</b></div>
-              <div class="progress-track"><div class="progress-fill" id="progressFillAdmin"></div></div>
-            </div>
-            <div class="lockednote">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
-              El detalle de gestión (qué área lo está atendiendo, en qué etapa está cada acceso) es interno de Informática y no se muestra aquí.
-            </div>
-          </div>
-
-          <div class="card">
-            <h2>Seguimiento</h2>
-            <div class="hint">Solo eventos visibles para el solicitante.</div>
-            <div id="auditLogAdmin">
-              <div class="audit-item"><div class="audit-dot"></div><div class="audit-body"><b>Solicitud creada</b><div class="audit-meta">Mesa de Partes — Administración · hoy, 09:14</div></div></div>
-            </div>
+            <h2>Qué pasa al notificar</h2>
+            <div class="hint" style="margin-bottom:0;">Al pulsar "Notificar a Informática", la solicitud queda registrada a tu nombre e Informática recibe un correo con los accesos que marcaste. Los accesos se entregan de forma escalonada: puedes ver el avance de cada uno en <b>Gestión de solicitudes</b>.</div>
           </div>
         </div>
       </div>
@@ -344,40 +329,37 @@
         <div>
           <div class="card">
             <h2>Bandeja de solicitudes</h2>
-            <div class="hint">Solicitudes notificadas pendientes de gestión.</div>
-            <div class="queue-item selected"><span>RESOL-2026-0142 · Pérez Ramírez, Juan</span><span class="badge">En proceso</span></div>
-            <div class="queue-item"><span>RESOL-2026-0139 · Quispe Torres, Ana</span><span class="badge">Nuevo</span></div>
-            <div class="queue-item"><span>RESOL-2026-0135 · Rojas Medina, Luis</span><span class="badge">Nuevo</span></div>
+            <div class="hint">Solicitudes que Administración notificó. Elige una para gestionar sus accesos.</div>
+            <label class="req-row" style="border:none;padding:0 0 12px;font-size:12.5px;color:var(--ink-soft);"><input type="checkbox" id="bandejaCompletadas" onchange="itCargarBandeja()"> Mostrar también las completadas</label>
+            <div id="itBandeja"><div class="hint" style="margin:0;">Cargando…</div></div>
           </div>
 
-          <div class="card">
-            <h2>Accesos solicitados — RESOL-2026-0142</h2>
-            <div class="hint">Solo aparecen los accesos que Administración marcó como requeridos. Actualiza el estado conforme avanzas.</div>
-            <div class="mgmt-list" id="mgmtList">
-              <!-- generado por JS a partir de lo marcado en la vista Administración -->
-            </div>
+          <div class="card" id="itDetalleCard" style="display:none;">
+            <h2 id="itDetalleTitulo">Accesos solicitados</h2>
+            <div class="hint" id="itDetalleSub"></div>
+            <div id="itCredBox" style="display:none;margin-bottom:12px;padding:12px 14px;background:var(--gold-soft);border:1px solid #DCC581;border-radius:8px;font-size:12.5px;"></div>
+            <div id="itDocBox" style="display:none;margin-bottom:12px;padding:12px 14px;background:#F4EBDD;border:1px solid #DCC9A8;border-radius:8px;font-size:12.5px;"></div>
+            <div class="mgmt-list" id="mgmtList"></div>
             <div class="formfoot">
-              <button class="btn btn-primary" id="saveProgressBtn">Guardar avance</button>
+              <button class="btn btn-primary" id="saveProgressBtn" onclick="itGuardarAvance()">Guardar avance</button>
             </div>
           </div>
         </div>
 
         <div>
-          <div class="card">
+          <div class="card" id="itAvanceCard" style="display:none;">
             <h2>Avance calculado</h2>
             <div class="progress-wrap">
               <div class="progress-top"><span>Avance general</span><b id="progressLabelIT">0%</b></div>
               <div class="progress-track"><div class="progress-fill" id="progressFillIT"></div></div>
             </div>
-            <div class="hint" style="margin-top:10px;margin-bottom:0;">Se calcula como el promedio de la etapa de cada acceso, según Mantenimiento_Estados_Progreso.</div>
+            <div class="hint" id="itAvanceResumen" style="margin-top:10px;margin-bottom:0;"></div>
           </div>
 
-          <div class="card">
-            <h2>Historial interno</h2>
-            <div class="hint">Todas las acciones, visibles solo para Informática.</div>
-            <div id="auditLogIT">
-              <div class="audit-item"><div class="audit-dot"></div><div class="audit-body"><b>Solicitud notificada por Administración</b><div class="audit-meta">Mesa de Partes · hoy, 09:14</div></div></div>
-            </div>
+          <div class="card" id="itHistorialCard" style="display:none;">
+            <h2>Historial de la solicitud</h2>
+            <div class="hint">Acciones registradas sobre esta solicitud.</div>
+            <div id="itHistorial"></div>
           </div>
         </div>
       </div>
@@ -409,17 +391,17 @@
 
     <!-- ============ VISTA DASHBOARD ============ -->
     <div class="view" id="view-dashboard">
+      <div class="hint" id="dashAlcance" style="margin-bottom:12px;"></div>
       <div class="row" style="grid-template-columns:repeat(4,1fr);">
-        <div class="card"><div class="hint" style="margin-bottom:6px;">Pendientes</div><h2 style="font-size:26px;">7</h2></div>
-        <div class="card"><div class="hint" style="margin-bottom:6px;">En proceso</div><h2 style="font-size:26px;">12</h2></div>
-        <div class="card"><div class="hint" style="margin-bottom:6px;">Completadas (mes)</div><h2 style="font-size:26px;">34</h2></div>
-        <div class="card"><div class="hint" style="margin-bottom:6px;">Total solicitudes</div><h2 style="font-size:26px;">53</h2></div>
+        <div class="card"><div class="hint" style="margin-bottom:6px;">Pendientes</div><h2 id="dashPendientes" style="font-size:26px;">—</h2></div>
+        <div class="card"><div class="hint" style="margin-bottom:6px;">En proceso</div><h2 id="dashEnProceso" style="font-size:26px;">—</h2></div>
+        <div class="card"><div class="hint" style="margin-bottom:6px;">Completadas</div><h2 id="dashCompletadas" style="font-size:26px;">—</h2></div>
+        <div class="card"><div class="hint" style="margin-bottom:6px;">Total de solicitudes</div><h2 id="dashTotal" style="font-size:26px;">—</h2></div>
       </div>
       <div class="card">
         <h2>Solicitudes por sede</h2>
-        <div class="hint">Vista resumen — el detalle completo está en Gestión de solicitudes / Gestión de accesos según tu área.</div>
-        <div style="display:flex;justify-content:space-between;padding:6px 0;"><span>Carabayllo</span><span style="color:var(--ink-soft);">31 solicitudes</span></div>
-        <div style="display:flex;justify-content:space-between;padding:6px 0;"><span>Independencia</span><span style="color:var(--ink-soft);">22 solicitudes</span></div>
+        <div class="hint">El detalle completo está en Gestión de solicitudes o Gestión de accesos, según tu área.</div>
+        <div id="dashSedes"></div>
       </div>
     </div>
 
@@ -471,10 +453,8 @@
     <div class="view" id="view-auditoria">
       <div class="card">
         <h2>Auditoría general</h2>
-        <div class="hint">Registro de todas las acciones del sistema — visible solo para Informática.</div>
-        <div class="audit-item"><div class="audit-dot"></div><div class="audit-body"><b>Notificación enviada a Informática</b><div class="audit-meta">Mesa de Partes — Administración · hoy, 09:20</div></div></div>
-        <div class="audit-item"><div class="audit-dot"></div><div class="audit-body"><b>Clave restablecida para rfernandez</b><div class="audit-meta">Administrador del sistema · hoy, 08:05</div></div></div>
-        <div class="audit-item"><div class="audit-dot"></div><div class="audit-body"><b>Nueva sede registrada: Independencia</b><div class="audit-meta">Informática · ayer, 14:12</div></div></div>
+        <div class="hint">Las últimas 100 acciones registradas en el sistema. Nunca se guardan contraseñas.</div>
+        <div id="audLista"><div class="hint" style="margin:0;">Cargando…</div></div>
       </div>
     </div>
   </div><!-- /content -->
@@ -500,15 +480,6 @@
 <div class="toast" id="toast"><span class="dot"></span><span id="toastText">Notificación enviada a informatica@pj.gob.pe</span></div>
 
 <script>
-  // --- Etapas de avance por acceso (Mantenimiento_Estados_Progreso) — editable, no depende del sistema ---
-  const ESTADOS_PROGRESO = {
-    "Registrado": 10,
-    "Asignado": 25,
-    "En progreso": 50,
-    "En espera": 75,
-    "Resuelto": 100
-  };
-
   // --- DNI ---
   const dnisExistentes = ["07452136","41209988","10023344"];
   const dniInput = document.getElementById('dniInput');
@@ -537,85 +508,9 @@
     document.getElementById('fname').textContent = e.target.files[0] ? e.target.files[0].name : "Ningún archivo seleccionado";
   });
 
-  // --- Plantillas de documentos por sistema (Mantenimiento_Plantillas) ---
-  const PLANTILLAS = {
-    "RENIEC": { nombre: "Oficio RENIEC — Consulta de menores", campos: ["NOMBRES","APELLIDOS","DNI","FECHA"] }
-  };
-
   function accesosRequeridos(){
     return [...document.querySelectorAll('.req-check')].filter(c => c.checked).map(c => c.dataset.name);
   }
-
-  function pintarMgmtList(){
-    const lista = accesosRequeridos();
-    const mgmt = document.getElementById('mgmtList');
-    mgmt.innerHTML = '';
-    lista.forEach(nombre => {
-      const row = document.createElement('div');
-      row.className = 'mgmt-row';
-      const esUsuarioRed = String(nombre).toUpperCase() === 'USUARIO DE RED';
-      const plantilla = PLANTILLAS[nombre];
-      row.innerHTML = `
-        <div class="left"><span class="name">${nombre}</span><span class="weight">${plantilla ? 'Tiene plantilla: '+plantilla.nombre : ''}</span></div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          ${esUsuarioRed ? '<button class="btn btn-ghost btn-sm" type="button" onclick="generarCredenciales()">Generar credenciales</button>' : ''}
-          ${plantilla ? '<button class="btn btn-ghost btn-sm" type="button" onclick="generarDocumento(\''+nombre+'\')">Generar documento</button>' : ''}
-          <select class="mgmt-status" data-name="${nombre}">
-            <option>Registrado</option>
-            <option>Asignado</option>
-            <option>En progreso</option>
-            <option>En espera</option>
-            <option>Resuelto</option>
-          </select>
-        </div>`;
-      mgmt.appendChild(row);
-      if(esUsuarioRed){
-        const credBox = document.createElement('div');
-        credBox.id = 'credBox';
-        credBox.style.cssText = 'display:none;margin:0 2px 10px;padding:12px 14px;background:var(--gold-soft);border:1px solid #DCC581;border-radius:8px;font-size:12.5px;';
-        mgmt.appendChild(credBox);
-      }
-      if(plantilla){
-        const docBox = document.createElement('div');
-        docBox.id = 'docBox-' + nombre.replace(/\s+/g,'_');
-        docBox.style.cssText = 'display:none;margin:0 2px 10px;padding:12px 14px;background:#F4EBDD;border:1px solid #DCC9A8;border-radius:8px;font-size:12.5px;';
-        mgmt.appendChild(docBox);
-      }
-    });
-    mgmt.querySelectorAll('.mgmt-status').forEach(sel => sel.addEventListener('change', calcularAvance));
-    calcularAvance();
-  }
-
-  function generarDocumento(nombreSistema){
-    const plantilla = PLANTILLAS[nombreSistema];
-    const apellidos = document.getElementById('apellidosInput').value.trim() || 'Pérez Ramírez';
-    const nombres = document.getElementById('nombresInput').value.trim() || 'Juan';
-    const dni = document.getElementById('dniInput').value.trim() || '07452136';
-    const fecha = new Date().toLocaleDateString('es-PE');
-
-    const box = document.getElementById('docBox-' + nombreSistema.replace(/\s+/g,'_'));
-    box.style.display = 'block';
-    box.innerHTML = `
-      <div style="margin-bottom:6px;"><b>${plantilla.nombre}</b> — campos combinados automáticamente:</div>
-      <div style="margin-bottom:4px;">NOMBRES: ${nombres} &nbsp; APELLIDOS: ${apellidos} &nbsp; DNI: ${dni} &nbsp; FECHA: ${fecha}</div>
-      <div style="font-size:11px;color:var(--ink-soft);margin-top:6px;">Documento generado en Drive a partir de la plantilla — listo para descargar o adjuntar al expediente.</div>`;
-
-    const hora = new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
-    document.getElementById('auditLogIT').prepend(crearAudit('Documento generado: '+plantilla.nombre, 'Informática · hoy, '+hora));
-  }
-
-  function calcularAvance(){
-    const selects = [...document.querySelectorAll('.mgmt-status')];
-    let suma = 0;
-    selects.forEach(sel => { suma += ESTADOS_PROGRESO[sel.value] || 0; });
-    const pct = selects.length ? Math.round(suma / selects.length) : 0;
-    ['Admin','IT'].forEach(sufijo => {
-      document.getElementById('progressFill'+sufijo).style.width = pct + '%';
-      document.getElementById('progressLabel'+sufijo).textContent = pct + '%';
-    });
-  }
-
-  document.querySelectorAll('.req-check').forEach(c => c.addEventListener('change', pintarMgmtList));
 
   document.getElementById('notifyBtn').addEventListener('click', () => {
     const datos = {
@@ -652,13 +547,10 @@
         }
         google.script.run
           .withSuccessHandler(function () {
-            document.getElementById('fechaSolicitud').value = new Date().toISOString().split('T')[0];
-            const toast = document.getElementById('toast');
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 3200);
-            const hora = new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
-            document.getElementById('auditLogAdmin').prepend(crearAudit('Notificación enviada a Informática', 'Mesa de Partes — Administración · hoy, '+hora));
+            limpiarFormularioSolicitud();
+            mostrarToast('Solicitud notificada a Informática');
             btn.disabled = false; btn.textContent = 'Notificar a Informática';
+            goTo('admin-list');
           })
           .withFailureHandler(function (error) {
             alert('La solicitud se creó, pero falló la notificación: ' + error.message);
@@ -672,44 +564,6 @@
       })
       .solicitudes_crear(sessionToken, datos);
   });
-
-  document.getElementById('saveProgressBtn').addEventListener('click', () => {
-    const hora = new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
-    const pct = document.getElementById('progressLabelIT').textContent;
-    document.getElementById('auditLogIT').prepend(crearAudit('Avance actualizado a '+pct, 'Informática · hoy, '+hora));
-    document.getElementById('auditLogAdmin').prepend(crearAudit('Informática actualizó el avance de la solicitud', 'Sistema · hoy, '+hora));
-  });
-
-  function crearAudit(titulo, meta){
-    const div = document.createElement('div');
-    div.className = 'audit-item';
-    div.innerHTML = `<div class="audit-dot"></div><div class="audit-body"><b>${titulo}</b><div class="audit-meta">${meta}</div></div>`;
-    return div;
-  }
-
-
-
-  function generarCredenciales(){
-    const apellidos = document.getElementById('apellidosInput').value.trim().split(' ')[0] || 'apellido';
-    const nombres = document.getElementById('nombresInput').value.trim().split(' ')[0] || 'nombre';
-    const usuario = (nombres.charAt(0) + apellidos).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-    const clave = generarClaveTemporal();
-    const box = document.getElementById('credBox');
-    box.style.display = 'block';
-    box.innerHTML = `
-      <div style="margin-bottom:6px;"><b>Usuario de red:</b> ${usuario}</div>
-      <div style="margin-bottom:8px;"><b>Contraseña temporal:</b> <span id="claveTexto">${clave}</span></div>
-      <div style="font-size:11px;color:var(--ink-soft);">Esta contraseña se muestra una sola vez y no queda guardada en la hoja. Comunícala por un canal seguro (no por este mismo registro) e indica que debe cambiarla en el primer inicio de sesión.</div>`;
-    const hora = new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
-    document.getElementById('auditLogIT').prepend(crearAudit('Credenciales generadas para Usuario de red ('+usuario+')', 'Informática · hoy, '+hora+' · contraseña no almacenada'));
-  }
-
-  function generarClaveTemporal(){
-    const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$';
-    let clave = '';
-    for(let i=0;i<10;i++) clave += chars[Math.floor(Math.random()*chars.length)];
-    return clave;
-  }
 
   // ============ SESIÓN Y NAVEGACIÓN ============
   // El token llega por la URL (?token=...) tras validarse en login.html contra
@@ -755,6 +609,9 @@
     if (destino === 'mantenimiento') mantCargar();
     if (destino === 'usuarios') usuCargar();
     if (destino === 'admin-list') solCargar();
+    if (destino === 'it') itAbrirVista();
+    if (destino === 'dashboard') dashCargar();
+    if (destino === 'auditoria') audCargar();
   }
 
   function cerrarSesion(){
@@ -818,7 +675,6 @@
     document.getElementById('userchip').innerHTML = 'Sesión: <b>'+sesion.nombre+' — '+sesion.cargo+'</b>';
     document.querySelectorAll('.content > div[style*="max-width:460px"]').forEach(el => el.remove());
     goTo(DESTINO_INICIAL[codigoArea]);
-    pintarMgmtList();
   }
 
   // ============ MANTENIMIENTO (conectado a Mantenimiento.gs) ============
@@ -1323,6 +1179,237 @@
   function solToggle(i){
     const fila = document.getElementById('solDet' + i);
     if (fila) fila.style.display = fila.style.display === 'none' ? 'table-row' : 'none';
+  }
+
+  function limpiarFormularioSolicitud(){
+    ['resolucionInput', 'fechaResolucion', 'fechaSolicitud', 'dniInput', 'apellidosInput', 'nombresInput']
+      .forEach(id => { document.getElementById(id).value = ''; });
+    document.getElementById('dniField').classList.remove('error', 'ok');
+    document.getElementById('fileInput').value = '';
+    document.getElementById('fname').textContent = 'Ningún archivo seleccionado';
+    document.querySelectorAll('.req-check').forEach(c => { c.checked = false; });
+  }
+
+  // ============ GESTIÓN DE ACCESOS (Informática, conectado a Accesos.gs) ============
+  const IT = { bandeja: [], seleccionada: null, detalle: null };
+  const itId = id => document.getElementById(id);
+
+  function itAbrirVista(){
+    IT.seleccionada = null; IT.detalle = null;
+    ['itDetalleCard', 'itAvanceCard', 'itHistorialCard'].forEach(id => { itId(id).style.display = 'none'; });
+    itCargarBandeja();
+  }
+
+  function itCargarBandeja(){
+    const cont = itId('itBandeja');
+    if (!sessionToken) { cont.innerHTML = '<div class="hint" style="margin:0;">Disponible al iniciar sesión.</div>'; return; }
+    cont.innerHTML = '<div class="hint" style="margin:0;">Cargando…</div>';
+    google.script.run
+      .withSuccessHandler(filas => { IT.bandeja = filas || []; itPintarBandeja(); })
+      .withFailureHandler(err => { cont.innerHTML = '<div class="hint" style="margin:0;color:var(--warn);">No se pudo cargar: ' + esc(err.message) + '</div>'; })
+      .accesos_listarBandeja(sessionToken, itId('bandejaCompletadas').checked);
+  }
+
+  function itPintarBandeja(){
+    const cont = itId('itBandeja');
+    if (!IT.bandeja.length) {
+      cont.innerHTML = '<div class="hint" style="margin:0;">No hay solicitudes pendientes de gestión. Cuando Administración notifique una, aparecerá aquí.</div>';
+      return;
+    }
+    cont.innerHTML = IT.bandeja.map((s, i) =>
+      '<div class="queue-item' + (IT.seleccionada === s.ITEM ? ' selected' : '') + '" onclick="itAbrir(' + i + ')">' +
+        '<span>' + esc(s.RESOLUCION) + ' · ' + esc(s.APELLIDOS) + ', ' + esc(s.NOMBRES) +
+          '<br><span style="font-size:11px;color:var(--ink-soft);">DNI ' + esc(s.DNI) + ' · ' + esc(s.SEDE) + ' · ' + esc(s.FECHA_SOLICITUD || '') + '</span></span>' +
+        '<span style="white-space:nowrap;text-align:right;">' + estadoGeneralPill(s.ESTADO_GENERAL) +
+          '<br><span style="font-size:11px;color:var(--ink-soft);">' + s.AVANCE + '% · ' + s.ACCESOS_RESUELTOS + '/' + s.ACCESOS_TOTAL + '</span></span></div>'
+    ).join('');
+  }
+
+  // Cambios hechos en pantalla y todavía no guardados
+  function itCambios(){
+    const cambios = [];
+    if (!IT.detalle) return cambios;
+    IT.detalle.accesos.forEach((a, j) => {
+      const sel = document.querySelector('#mgmtList .mgmt-status[data-j="' + j + '"]');
+      const inp = document.querySelector('#mgmtList .mgmt-valor[data-j="' + j + '"]');
+      if (!sel) return;
+      const valor = inp ? inp.value.trim() : '';
+      const cambioValor = !!inp && valor !== '' && valor !== String(a.VALOR_ASIGNADO || '');
+      if (sel.value !== a.ESTADO || cambioValor) cambios.push({ idDetalle: a.ID_DETALLE, estado: sel.value, valor: valor });
+    });
+    return cambios;
+  }
+
+  function itAbrir(i){
+    const s = IT.bandeja[i];
+    if (IT.seleccionada !== s.ITEM && itCambios().length && !confirm('Hay cambios sin guardar en la solicitud abierta. ¿Descartarlos?')) return;
+    IT.seleccionada = s.ITEM;
+    itPintarBandeja();
+    itCargarDetalle(s.ITEM, false);
+  }
+
+  function itCargarDetalle(item, conservarAvisos){
+    itId('itDetalleCard').style.display = 'block';
+    if (!conservarAvisos) {
+      itId('itAvanceCard').style.display = 'none';
+      itId('itHistorialCard').style.display = 'none';
+      itId('itDetalleTitulo').textContent = 'Accesos solicitados';
+      itId('itDetalleSub').textContent = 'Cargando…';
+      itId('mgmtList').innerHTML = '';
+      itId('itCredBox').style.display = 'none';
+      itId('itDocBox').style.display = 'none';
+    }
+    google.script.run
+      .withSuccessHandler(r => { if (IT.seleccionada !== item) return; IT.detalle = r; itPintarDetalle(); itCargarHistorial(item); })
+      .withFailureHandler(err => { itId('itDetalleSub').textContent = 'No se pudo cargar: ' + err.message; })
+      .accesos_obtenerDetalleSolicitud(sessionToken, item);
+  }
+
+  function itPintarDetalle(){
+    const s = IT.detalle.solicitud, etapas = IT.detalle.etapas, accesos = IT.detalle.accesos;
+    itId('itDetalleTitulo').textContent = 'Accesos solicitados — ' + s.RESOLUCION;
+    itId('itDetalleSub').textContent = s.APELLIDOS + ', ' + s.NOMBRES + ' · DNI ' + s.DNI + ' · ' + s.PERFIL + ' · ' + s.SEDE +
+      ' · solicitada el ' + (s.FECHA_SOLICITUD || '—') + '. Actualiza la etapa de cada acceso conforme avanzas.';
+    itId('saveProgressBtn').style.display = accesos.length ? '' : 'none';
+    if (!accesos.length) {
+      itId('mgmtList').innerHTML = '<div class="hint" style="margin:12px 0 0;">Esta solicitud no tiene accesos registrados.</div>';
+      itId('itAvanceCard').style.display = 'none';
+      return;
+    }
+    const estiloInput = 'width:100%;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-size:12.5px;font-family:inherit;background:#FFFEFB;color:var(--ink);';
+    itId('mgmtList').innerHTML = accesos.map((a, j) => {
+      const enCatalogo = etapas.some(e => e.ESTADO === a.ESTADO);
+      const opciones = (enCatalogo ? '' : '<option value="' + esc(a.ESTADO) + '" selected>' + esc(a.ESTADO) + ' (no está en Mantenimiento)</option>') +
+        etapas.map(e => '<option value="' + esc(e.ESTADO) + '"' + (e.ESTADO === a.ESTADO ? ' selected' : '') + '>' + esc(e.ESTADO) + ' (' + e.PORCENTAJE + '%)</option>').join('');
+      return '<div class="mgmt-row" style="flex-wrap:wrap;">' +
+        '<div class="left"><span class="name">' + esc(a.SISTEMA) + '</span></div>' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;">' +
+          (a.ES_USUARIO_RED ? '<button class="btn btn-ghost btn-sm" type="button" onclick="itGenerarCredenciales(' + j + ')">Generar credenciales</button>' : '') +
+          (a.TIENE_PLANTILLA ? '<button class="btn btn-ghost btn-sm" type="button" onclick="itGenerarDocumento(' + j + ')">Generar documento</button>' : '') +
+          '<select class="mgmt-status" data-j="' + j + '" onchange="itRecalcular()">' + opciones + '</select>' +
+        '</div>' +
+        (a.REQUIERE_VALOR ? '<div style="flex:1 1 100%;"><input type="text" class="mgmt-valor" data-j="' + j + '" data-sin-mayus value="' + esc(a.VALOR_ASIGNADO) + '" placeholder="Dato asignado (ej. usuario o correo)" style="' + estiloInput + '"></div>' : '') +
+        '</div>';
+    }).join('');
+    itRecalcular();
+  }
+
+  function itRecalcular(){
+    if (!IT.detalle) return;
+    const mapa = {};
+    IT.detalle.etapas.forEach(e => { mapa[e.ESTADO] = e.PORCENTAJE; });
+    const pcts = [...document.querySelectorAll('#mgmtList .mgmt-status')].map(sel => mapa[sel.value] || 0);
+    const pct = pcts.length ? Math.round(pcts.reduce((a, x) => a + x, 0) / pcts.length) : 0;
+    const resueltos = pcts.filter(x => x >= 100).length;
+    itId('progressFillIT').style.width = pct + '%';
+    itId('progressFillIT').style.background = pct >= 100 ? 'var(--ok)' : '';
+    itId('progressLabelIT').textContent = pct + '%';
+    itId('itAvanceResumen').textContent = resueltos + ' de ' + pcts.length + (pcts.length === 1 ? ' acceso resuelto' : ' accesos resueltos') +
+      '. Se calcula como el promedio de la etapa de cada acceso.';
+    itId('itAvanceCard').style.display = 'block';
+  }
+
+  function itGuardarAvance(){
+    const cambios = itCambios();
+    if (!cambios.length) { mostrarToast('No hay cambios por guardar'); return; }
+    const btn = itId('saveProgressBtn'), item = IT.seleccionada;
+    btn.disabled = true; btn.textContent = 'Guardando…';
+    const listo = () => { btn.disabled = false; btn.textContent = 'Guardar avance'; };
+    google.script.run
+      .withSuccessHandler(() => { listo(); mostrarToast('Avance guardado'); itCargarDetalle(item, true); itCargarBandeja(); })
+      .withFailureHandler(err => { listo(); alert('No se pudo guardar: ' + err.message); })
+      .accesos_guardarCambios(sessionToken, item, cambios);
+  }
+
+  function itGenerarCredenciales(j){
+    if (itCambios().length) { alert('Guarda primero los cambios pendientes de esta solicitud.'); return; }
+    const a = IT.detalle.accesos[j], s = IT.detalle.solicitud;
+    if (!confirm('Se generará el usuario de red y una contraseña temporal para ' + s.NOMBRES + ' ' + s.APELLIDOS +
+      ', y este acceso quedará como RESUELTO. La contraseña se muestra una sola vez. ¿Continuar?')) return;
+    google.script.run
+      .withSuccessHandler(r => {
+        const box = itId('itCredBox');
+        box.style.display = 'block';
+        box.innerHTML = '<b>Credenciales del empleado</b><br>Usuario de red: <b style="text-transform:none;">' + esc(r.usuario) + '</b>' +
+          ' &nbsp;·&nbsp; Contraseña temporal: <b style="text-transform:none;font-family:monospace;font-size:14px;">' + esc(r.claveTemporal) + '</b>' +
+          '<div style="font-size:11px;color:var(--ink-soft);margin-top:6px;">Se muestra una sola vez y no queda guardada. Entrégala por un canal seguro e indica que debe cambiarla en su primer ingreso.</div>';
+        itCargarDetalle(IT.seleccionada, true); itCargarBandeja();
+      })
+      .withFailureHandler(err => alert('No se pudieron generar las credenciales: ' + err.message))
+      .accesos_generarCredencialesEmpleado(sessionToken, a.ID_DETALLE, s.NOMBRES, s.APELLIDOS);
+  }
+
+  function itGenerarDocumento(j){
+    const a = IT.detalle.accesos[j], s = IT.detalle.solicitud;
+    mostrarToast('Generando documento…');
+    google.script.run
+      .withSuccessHandler(r => {
+        const box = itId('itDocBox');
+        box.style.display = 'block';
+        box.innerHTML = '<b>Documento generado</b> — <a href="' + esc(r.urlDocumento) + '" target="_blank" rel="noopener" style="color:var(--navy);font-weight:600;">Abrir documento</a>' +
+          '<div style="font-size:11px;color:var(--ink-soft);margin-top:6px;">Puede contener datos de menores: compártelo solo con quien corresponda.</div>';
+        mostrarToast('Documento generado');
+        itCargarHistorial(IT.seleccionada);
+      })
+      .withFailureHandler(err => alert('No se pudo generar el documento: ' + err.message))
+      .accesos_generarDocumento(sessionToken, s.ITEM, a.SISTEMA);
+  }
+
+  function itCargarHistorial(item){
+    const cont = itId('itHistorial');
+    itId('itHistorialCard').style.display = 'block';
+    google.script.run
+      .withSuccessHandler(filas => {
+        if (IT.seleccionada !== item) return;
+        cont.innerHTML = (filas || []).length
+          ? filas.map(f => '<div class="audit-item"><div class="audit-dot"></div><div class="audit-body"><b>' + esc(f.ACCION) + '</b>' +
+              '<div class="audit-meta">' + esc(f.USUARIO) + ' · ' + esc(f.FECHA_HORA) + (f.DETALLE ? ' · ' + esc(f.DETALLE) : '') + '</div></div></div>').join('')
+          : '<div class="hint" style="margin:0;">Todavía no hay acciones registradas.</div>';
+      })
+      .withFailureHandler(err => { cont.innerHTML = '<div class="hint" style="margin:0;color:var(--warn);">No se pudo cargar: ' + esc(err.message) + '</div>'; })
+      .accesos_historialSolicitud(sessionToken, item);
+  }
+
+  // ============ DASHBOARD (cifras reales) ============
+  function dashCargar(){
+    const campos = ['dashPendientes', 'dashEnProceso', 'dashCompletadas', 'dashTotal'];
+    campos.forEach(id => { itId(id).textContent = '—'; });
+    const sedes = itId('dashSedes');
+    if (!sessionToken) { sedes.innerHTML = '<div class="hint" style="margin:0;">Disponible al iniciar sesión.</div>'; return; }
+    sedes.innerHTML = '<div class="hint" style="margin:0;">Cargando…</div>';
+    google.script.run
+      .withSuccessHandler(r => {
+        itId('dashPendientes').textContent = r.pendientes;
+        itId('dashEnProceso').textContent = r.enProceso;
+        itId('dashCompletadas').textContent = r.completadas;
+        itId('dashTotal').textContent = r.total;
+        itId('dashAlcance').textContent = r.alcance === 'propias'
+          ? 'Resumen de las solicitudes que tú registraste.'
+          : 'Resumen de todas las solicitudes notificadas a Informática.';
+        sedes.innerHTML = r.porSede.length
+          ? r.porSede.map(x => '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);"><span>' + esc(x.SEDE) +
+              '</span><span style="color:var(--ink-soft);">' + x.TOTAL + (x.TOTAL === 1 ? ' solicitud' : ' solicitudes') + '</span></div>').join('')
+          : '<div class="hint" style="margin:0;">Aún no hay solicitudes.</div>';
+      })
+      .withFailureHandler(err => { sedes.innerHTML = '<div class="hint" style="margin:0;color:var(--warn);">No se pudo cargar: ' + esc(err.message) + '</div>'; })
+      .dashboard_obtenerResumen(sessionToken);
+  }
+
+  // ============ AUDITORÍA (eventos reales) ============
+  function audCargar(){
+    const cont = itId('audLista');
+    if (!sessionToken) { cont.innerHTML = '<div class="hint" style="margin:0;">Disponible al iniciar sesión.</div>'; return; }
+    cont.innerHTML = '<div class="hint" style="margin:0;">Cargando…</div>';
+    google.script.run
+      .withSuccessHandler(filas => {
+        cont.innerHTML = (filas || []).length
+          ? filas.map(f => '<div class="audit-item"><div class="audit-dot"></div><div class="audit-body"><b>' + esc(f.ACCION) + '</b>' +
+              '<div class="audit-meta">' + esc(f.USUARIO) + (f.AREA ? ' · ' + esc(f.AREA) : '') + ' · ' + esc(f.FECHA_HORA) +
+              (f.ITEM_AFECTADO ? ' · ' + esc(f.ITEM_AFECTADO) : '') + (f.DETALLE ? ' · ' + esc(f.DETALLE) : '') + '</div></div></div>').join('')
+          : '<div class="hint" style="margin:0;">Aún no hay eventos registrados.</div>';
+      })
+      .withFailureHandler(err => { cont.innerHTML = '<div class="hint" style="margin:0;color:var(--warn);">No se pudo cargar: ' + esc(err.message) + '</div>'; })
+      .auditoria_listarRecientes(sessionToken, 100);
   }
 
   // Todo campo de texto se convierte a MAYÚSCULA mientras se escribe,
