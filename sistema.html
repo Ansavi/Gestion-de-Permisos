@@ -137,7 +137,7 @@
   .lockednote{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-soft);background:#F0E6D2;border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:14px;}
   .lockednote svg{width:15px;height:15px;flex:none;}
 
-  .toast{position:fixed;bottom:24px;right:24px;background:var(--navy-dark);color:#fff;padding:13px 18px;border-radius:8px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.25);display:flex;align-items:center;gap:10px;transform:translateY(20px);opacity:0;pointer-events:none;transition:all .3s ease;z-index:50;}
+  .toast{max-width:min(440px, calc(100vw - 48px));position:fixed;bottom:24px;right:24px;background:var(--navy-dark);color:#fff;padding:13px 18px;border-radius:8px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.25);display:flex;align-items:center;gap:10px;transform:translateY(20px);opacity:0;pointer-events:none;transition:all .3s ease;z-index:50;}
   .toast.show{transform:translateY(0);opacity:1;}
   .toast .dot{width:8px;height:8px;border-radius:50%;background:var(--gold);}
 
@@ -192,6 +192,7 @@
       <a class="navitem" id="navAccesos" data-roles="it" onclick="goTo('it')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 12l2 2 4-4"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>Gestión de accesos</a>
       <a class="navitem" id="navUsuarios" data-roles="it" onclick="goTo('usuarios')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3"/><path d="M4 20c0-3.5 3.5-6 8-6s8 2.5 8 6"/></svg>Usuarios</a>
       <a class="navitem" id="navMantenimiento" data-roles="it" onclick="goTo('mantenimiento')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 4v5c0 5-3.5 7.5-8 9-4.5-1.5-8-4-8-9V7l8-4z"/></svg>Mantenimiento</a>
+      <a class="navitem" id="navCorreo" data-roles="it" style="display:none;" onclick="goTo('correo')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>Configuración de correo</a>
       <a class="navitem" id="navReportes" data-roles="admin,it" onclick="goTo('reportes')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 17v-6M13 17V9M17 17v-3"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>Reportes</a>
       <a class="navitem" id="navAuditoria" data-roles="it" onclick="goTo('auditoria')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 10h16M4 14h10M4 18h6"/></svg>Auditoría</a>
     </nav>
@@ -235,7 +236,7 @@
               <div class="field"><label>Sede</label><select id="sedeInput"><option>CARABAYLLO</option><option>INDEPENDENCIA</option></select></div>
             </div>
             <div class="field">
-              <label>Documento adjunto (PDF)</label>
+              <label>Documento adjunto (PDF, obligatorio, máx. 20 MB)</label>
               <div class="filebox">
                 <span class="fname" id="fname">Ningún archivo seleccionado</span>
                 <label class="btn btn-ghost" style="margin:0;">Adjuntar PDF<input type="file" accept="application/pdf" id="fileInput" style="display:none;"></label>
@@ -250,7 +251,8 @@
               <div class="field" id="dniField">
                 <label>DNI</label>
                 <input type="text" id="dniInput" maxlength="8" placeholder="Ej. 07452136">
-                <div class="msg error" id="dniErrorMsg">Este DNI ya tiene un usuario registrado.</div>
+                <div class="msg" id="dniVerificando" style="color:var(--ink-soft);">Verificando DNI…</div>
+                <div class="msg error" id="dniErrorMsg">Este DNI ya tiene una solicitud registrada.</div>
                 <div class="msg ok" id="dniOkMsg">DNI disponible.</div>
               </div>
               <div class="field">
@@ -337,6 +339,7 @@
           <div class="card" id="itDetalleCard" style="display:none;">
             <h2 id="itDetalleTitulo">Accesos solicitados</h2>
             <div class="hint" id="itDetalleSub"></div>
+            <div id="itPdf" style="margin-bottom:12px;"></div>
             <div id="itCredBox" style="display:none;margin-bottom:12px;padding:12px 14px;background:var(--gold-soft);border:1px solid #DCC581;border-radius:8px;font-size:12.5px;"></div>
             <div id="itDocBox" style="display:none;margin-bottom:12px;padding:12px 14px;background:#F4EBDD;border:1px solid #DCC9A8;border-radius:8px;font-size:12.5px;"></div>
             <div class="mgmt-list" id="mgmtList"></div>
@@ -437,6 +440,37 @@
       </div>
     </div>
 
+    <!-- ============ VISTA CONFIGURACIÓN DE CORREO ============ -->
+    <div class="view" id="view-correo">
+      <div class="card">
+        <h2>Envío de correos</h2>
+        <div class="hint">El sistema avisa por correo a los contactos que configures abajo. <b>No guarda ninguna contraseña de correo</b>: los mensajes salen desde la cuenta de Google con la que se publicó la aplicación. Para cambiar la cuenta que envía, la aplicación debe publicarse con esa cuenta.</div>
+        <div id="corEstado"></div>
+        <div class="row" style="grid-template-columns:1fr 1fr;margin-top:14px;">
+          <div class="field"><label>Nombre del remitente</label><input type="text" id="corRemitente" maxlength="80"></div>
+          <div class="field"><label>Responder a (opcional)</label><input type="text" id="corResponderA" data-sin-mayus placeholder="correo@ejemplo.com"></div>
+        </div>
+        <label class="req-row" style="border:none;padding:4px 2px 0;"><input type="checkbox" id="corActivo"> Enviar correos de aviso (si está desmarcado, no sale ningún correo)</label>
+        <div class="formfoot"><button class="btn btn-primary" onclick="corGuardarAjustes()">Guardar ajustes</button></div>
+      </div>
+
+      <div class="card">
+        <h2>Contactos y avisos</h2>
+        <div class="hint">Elige quién recibe cada aviso. Los correos no incluyen nombres ni DNI: solo el número de resolución y la sede.</div>
+        <div class="tabla-scroll">
+          <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+            <thead>
+              <tr style="text-align:left;border-bottom:1px solid var(--line);color:var(--ink-soft);">
+                <th style="padding:8px 6px;">Nombre</th><th style="padding:8px 6px;">Correo</th><th style="padding:8px 6px;">Avisos que recibe</th><th style="padding:8px 6px;">Estado</th><th style="padding:8px 6px;"></th>
+              </tr>
+            </thead>
+            <tbody id="corContactos"><tr><td colspan="5" style="padding:12px 6px;color:var(--ink-soft);">Cargando…</td></tr></tbody>
+          </table>
+        </div>
+        <div class="formfoot"><button class="btn btn-primary" onclick="corNuevo()">+ Nuevo contacto</button></div>
+      </div>
+    </div>
+
     <!-- ============ VISTA REPORTES ============ -->
     <div class="view" id="view-reportes">
       <div class="card">
@@ -480,18 +514,44 @@
 <div class="toast" id="toast"><span class="dot"></span><span id="toastText">Notificación enviada a informatica@pj.gob.pe</span></div>
 
 <script>
-  // --- DNI ---
-  const dnisExistentes = ["07452136","41209988","10023344"];
+  // --- DNI: solo números (8 dígitos); apenas se completa, se comprueba en el servidor que no esté repetido ---
   const dniInput = document.getElementById('dniInput');
   const dniField = document.getElementById('dniField');
   const dniErrorMsg = document.getElementById('dniErrorMsg');
   const dniOkMsg = document.getElementById('dniOkMsg');
+  const dniVerificando = document.getElementById('dniVerificando');
+  let dniPeticion = 0;
+
+  function dniLimpiarEstado(){
+    dniField.classList.remove('error', 'ok');
+    dniVerificando.style.display = 'none';
+  }
+
   dniInput.addEventListener('input', () => {
-    dniInput.value = dniInput.value.replace(/\D/g,'').slice(0,8);
-    dniField.classList.remove('error','ok'); dniErrorMsg.style.display='none'; dniOkMsg.style.display='none';
-    if(dniInput.value.length === 8){
-      dniField.classList.add(dnisExistentes.includes(dniInput.value) ? 'error' : 'ok');
-    }
+    dniInput.value = dniInput.value.replace(/\D/g, '').slice(0, 8);
+    dniPeticion++;                       // anula cualquier verificación anterior que todavía no respondió
+    dniLimpiarEstado();
+    if (dniInput.value.length !== 8 || !sessionToken) return;
+
+    const dni = dniInput.value, mia = dniPeticion;
+    dniVerificando.style.display = 'block';
+    google.script.run
+      .withSuccessHandler(r => {
+        if (mia !== dniPeticion) return;  // el DNI ya cambió: se ignora esta respuesta
+        dniLimpiarEstado();
+        if (r.existe) {
+          dniErrorMsg.textContent = r.mensaje || 'Este DNI ya tiene una solicitud registrada.';
+          dniField.classList.add('error');
+        } else {
+          dniOkMsg.textContent = r.reemplaza
+            ? 'Tienes una solicitud sin notificar con este DNI; se reemplazará al notificar.'
+            : 'DNI disponible.';
+          dniField.classList.add('ok');
+        }
+      })
+      // si no se pudo verificar, no se bloquea: el servidor lo vuelve a comprobar al notificar
+      .withFailureHandler(() => { if (mia === dniPeticion) dniLimpiarEstado(); })
+      .solicitudes_validarDni(sessionToken, dni);
   });
 
   function soloLetras(el, fieldEl){
@@ -504,9 +564,29 @@
   soloLetras(document.getElementById('apellidosInput'), document.getElementById('apellidosField'));
   soloLetras(document.getElementById('nombresInput'), document.getElementById('nombresField'));
 
+  const PDF_MAX_MB = 20;
+  function formatoTamano(bytes){
+    return bytes < 1024 * 1024 ? Math.max(1, Math.round(bytes / 1024)) + ' KB' : (bytes / 1024 / 1024).toFixed(1) + ' MB';
+  }
   document.getElementById('fileInput').addEventListener('change', (e) => {
-    document.getElementById('fname').textContent = e.target.files[0] ? e.target.files[0].name : "Ningún archivo seleccionado";
+    const etiqueta = document.getElementById('fname');
+    const archivo = e.target.files[0];
+    etiqueta.style.color = '';
+    if (!archivo) { etiqueta.textContent = 'Ningún archivo seleccionado'; return; }
+    const rechazar = (mensaje) => { e.target.value = ''; etiqueta.textContent = mensaje; etiqueta.style.color = 'var(--warn)'; };
+    if (archivo.type !== 'application/pdf' && !/\.pdf$/i.test(archivo.name)) return rechazar('Solo se aceptan archivos PDF.');
+    if (archivo.size > PDF_MAX_MB * 1024 * 1024) return rechazar('El PDF pesa ' + formatoTamano(archivo.size) + '; el máximo es ' + PDF_MAX_MB + ' MB.');
+    etiqueta.textContent = archivo.name + ' (' + formatoTamano(archivo.size) + ')';
   });
+
+  function leerArchivoBase64(archivo){
+    return new Promise((resolve, reject) => {
+      const lector = new FileReader();
+      lector.onload = () => resolve(String(lector.result).split(',')[1] || '');
+      lector.onerror = () => reject(lector.error);
+      lector.readAsDataURL(archivo);
+    });
+  }
 
   function accesosRequeridos(){
     return [...document.querySelectorAll('.req-check')].filter(c => c.checked).map(c => c.dataset.name);
@@ -520,13 +600,21 @@
       dni: document.getElementById('dniInput').value,
       apellidos: document.getElementById('apellidosInput').value,
       nombres: document.getElementById('nombresInput').value,
-      perfil: document.getElementById('perfilInput').value,
-      adjuntoUrl: '' // TODO: subir el PDF a Drive (DriveApp) y poner aquí la URL real
+      perfil: document.getElementById('perfilInput').value
     };
     const sistemasRequeridos = accesosRequeridos();
+    const archivo = document.getElementById('fileInput').files[0];
 
     if (!datos.resolucion || !datos.fechaResolucion || !datos.dni || !datos.apellidos || !datos.nombres) {
       alert('Completa resolución, fecha de resolución, DNI, apellidos y nombres antes de notificar.');
+      return;
+    }
+    if (dniField.classList.contains('error')) {
+      alert(dniErrorMsg.textContent);
+      return;
+    }
+    if (!archivo) {
+      alert('Adjunta el PDF de la resolución antes de notificar.');
       return;
     }
     if (sistemasRequeridos.length === 0) {
@@ -535,34 +623,49 @@
     }
 
     const btn = document.getElementById('notifyBtn');
+    const restaurar = () => { btn.disabled = false; btn.textContent = 'Notificar a Informática'; };
     btn.disabled = true;
-    btn.textContent = 'Enviando...';
+    btn.textContent = 'Leyendo PDF...';
 
-    google.script.run
-      .withSuccessHandler(function (resultadoCrear) {
-        if (!resultadoCrear.ok) {
-          alert('No se pudo crear la solicitud: ' + (resultadoCrear.mensaje || ''));
-          btn.disabled = false; btn.textContent = 'Notificar a Informática';
-          return;
-        }
-        google.script.run
-          .withSuccessHandler(function () {
-            limpiarFormularioSolicitud();
-            mostrarToast('Solicitud notificada a Informática');
-            btn.disabled = false; btn.textContent = 'Notificar a Informática';
-            goTo('admin-list');
-          })
-          .withFailureHandler(function (error) {
-            alert('La solicitud se creó, pero falló la notificación: ' + error.message);
-            btn.disabled = false; btn.textContent = 'Notificar a Informática';
-          })
-          .solicitudes_notificar(sessionToken, resultadoCrear.item, sistemasRequeridos);
-      })
-      .withFailureHandler(function (error) {
-        alert('No se pudo crear la solicitud: ' + error.message);
-        btn.disabled = false; btn.textContent = 'Notificar a Informática';
-      })
-      .solicitudes_crear(sessionToken, datos);
+    leerArchivoBase64(archivo).then(base64 => {
+      datos.adjunto = { nombre: archivo.name, base64: base64 };
+      btn.textContent = 'Enviando...';
+      google.script.run
+        .withSuccessHandler(function (resultadoCrear) {
+          if (!resultadoCrear || !resultadoCrear.ok) {
+            alert('No se pudo crear la solicitud.');
+            restaurar();
+            return;
+          }
+          google.script.run
+            .withSuccessHandler(function (r) {
+              limpiarFormularioSolicitud();
+              const correo = r && r.correo;
+              if (correo && correo.enviado) {
+                mostrarToast('Solicitud notificada. Se envió correo a ' + correo.destinatarios + (correo.destinatarios === 1 ? ' contacto.' : ' contactos.') +
+                  (correo.motivo ? ' ' + correo.motivo : ''), correo.motivo ? 8000 : 4500);
+              } else {
+                mostrarToast('Solicitud registrada, pero NO se envió correo: ' + ((correo && correo.motivo) || 'motivo desconocido') +
+                  ' Informática la verá igual en su bandeja.', 10000);
+              }
+              restaurar();
+              goTo('admin-list');
+            })
+            .withFailureHandler(function (error) {
+              alert('La solicitud se creó, pero falló la notificación: ' + error.message);
+              restaurar();
+            })
+            .solicitudes_notificar(sessionToken, resultadoCrear.item, sistemasRequeridos);
+        })
+        .withFailureHandler(function (error) {
+          alert('No se pudo crear la solicitud: ' + error.message);
+          restaurar();
+        })
+        .solicitudes_crear(sessionToken, datos);
+    }).catch(() => {
+      restaurar();
+      alert('No se pudo leer el archivo PDF. Vuelve a seleccionarlo.');
+    });
   });
 
   // ============ SESIÓN Y NAVEGACIÓN ============
@@ -582,21 +685,21 @@
   const TITULOS = {
     'admin-form': 'Registrar alta de acceso', 'admin-list': 'Gestión de solicitudes',
     'it': 'Gestión de accesos', 'usuarios': 'Usuarios del sistema', 'dashboard': 'Dashboard',
-    'mantenimiento': 'Mantenimiento', 'reportes': 'Reportes', 'auditoria': 'Auditoría'
+    'mantenimiento': 'Mantenimiento', 'correo': 'Configuración de correo', 'reportes': 'Reportes', 'auditoria': 'Auditoría'
   };
   const TOP_VIEW = {
     'admin-form':'admin', 'admin-list':'admin', 'it':'it', 'usuarios':'usuarios',
-    'dashboard':'dashboard', 'mantenimiento':'mantenimiento', 'reportes':'reportes', 'auditoria':'auditoria'
+    'dashboard':'dashboard', 'mantenimiento':'mantenimiento', 'correo':'correo', 'reportes':'reportes', 'auditoria':'auditoria'
   };
   const NAV_ID = {
     'admin-form':'navNueva', 'admin-list':'navGestion', 'it':'navAccesos', 'usuarios':'navUsuarios',
-    'dashboard':'navDashboard', 'mantenimiento':'navMantenimiento', 'reportes':'navReportes', 'auditoria':'navAuditoria'
+    'dashboard':'navDashboard', 'mantenimiento':'navMantenimiento', 'correo':'navCorreo', 'reportes':'navReportes', 'auditoria':'navAuditoria'
   };
 
   function goTo(destino){
     cerrarMenu();
     const top = TOP_VIEW[destino];
-    ['admin','it','usuarios','dashboard','mantenimiento','reportes','auditoria'].forEach(id => {
+    ['admin','it','usuarios','dashboard','mantenimiento','correo','reportes','auditoria'].forEach(id => {
       document.getElementById('view-'+id).classList.toggle('active', id===top);
     });
     if(top === 'admin'){
@@ -612,6 +715,7 @@
     if (destino === 'it') itAbrirVista();
     if (destino === 'dashboard') dashCargar();
     if (destino === 'auditoria') audCargar();
+    if (destino === 'correo') corCargar(true);
   }
 
   function cerrarSesion(){
@@ -684,11 +788,13 @@
     return String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
-  function mostrarToast(texto){
+  let toastTemporizador = null;
+  function mostrarToast(texto, ms){
     document.getElementById('toastText').textContent = texto;
     const toast = document.getElementById('toast');
     toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 3200);
+    clearTimeout(toastTemporizador);
+    toastTemporizador = setTimeout(() => toast.classList.remove('show'), ms || 3200);
   }
 
   function mantCargar(){
@@ -1131,6 +1237,9 @@
   }
 
   function solFilaDetalle(s, i){
+    const pdf = '<div style="margin-bottom:10px;">' + (s.TIENE_ADJUNTO
+      ? '<button class="btn btn-ghost btn-sm" type="button" onclick="verResolucion(' + s.ITEM + ', this)">Ver resolución (PDF)</button>'
+      : '<span style="font-size:12px;color:var(--ink-soft);">Esta solicitud no tiene PDF adjunto.</span>') + '</div>';
     let cuerpo;
     if (!s.ACCESOS_TOTAL) {
       cuerpo = '<div style="color:var(--ink-soft);">' +
@@ -1148,7 +1257,7 @@
             '<span class="det-pct">' + a.PORCENTAJE + '%</span></div>';
         }).join('');
     }
-    return '<tr id="solDet' + i + '" style="display:none;background:#FBF5EA;"><td colspan="9" style="padding:12px 16px;text-transform:none;"><div class="det-caja">' + cuerpo + '</div></td></tr>';
+    return '<tr id="solDet' + i + '" style="display:none;background:#FBF5EA;"><td colspan="9" style="padding:12px 16px;text-transform:none;"><div class="det-caja">' + pdf + cuerpo + '</div></td></tr>';
   }
 
   function solPintar(){
@@ -1187,6 +1296,7 @@
     document.getElementById('dniField').classList.remove('error', 'ok');
     document.getElementById('fileInput').value = '';
     document.getElementById('fname').textContent = 'Ningún archivo seleccionado';
+    document.getElementById('fname').style.color = '';
     document.querySelectorAll('.req-check').forEach(c => { c.checked = false; });
   }
 
@@ -1256,6 +1366,7 @@
       itId('itDetalleTitulo').textContent = 'Accesos solicitados';
       itId('itDetalleSub').textContent = 'Cargando…';
       itId('mgmtList').innerHTML = '';
+      itId('itPdf').innerHTML = '';
       itId('itCredBox').style.display = 'none';
       itId('itDocBox').style.display = 'none';
     }
@@ -1270,6 +1381,9 @@
     itId('itDetalleTitulo').textContent = 'Accesos solicitados — ' + s.RESOLUCION;
     itId('itDetalleSub').textContent = s.APELLIDOS + ', ' + s.NOMBRES + ' · DNI ' + s.DNI + ' · ' + s.PERFIL + ' · ' + s.SEDE +
       ' · solicitada el ' + (s.FECHA_SOLICITUD || '—') + '. Actualiza la etapa de cada acceso conforme avanzas.';
+    itId('itPdf').innerHTML = s.TIENE_ADJUNTO
+      ? '<button class="btn btn-ghost btn-sm" type="button" onclick="verResolucion(' + s.ITEM + ', this)">Ver resolución (PDF)</button>'
+      : '<span style="font-size:12px;color:var(--ink-soft);">Esta solicitud no tiene PDF adjunto.</span>';
     itId('saveProgressBtn').style.display = accesos.length ? '' : 'none';
     if (!accesos.length) {
       itId('mgmtList').innerHTML = '<div class="hint" style="margin:12px 0 0;">Esta solicitud no tiene accesos registrados.</div>';
@@ -1410,6 +1524,169 @@
       })
       .withFailureHandler(err => { cont.innerHTML = '<div class="hint" style="margin:0;color:var(--warn);">No se pudo cargar: ' + esc(err.message) + '</div>'; })
       .auditoria_listarRecientes(sessionToken, 100);
+  }
+
+  // ============ PDF DE LA RESOLUCIÓN ============
+  // El archivo queda privado en Drive: se pide al servidor, que verifica que esta persona pueda verlo.
+  function verResolucion(item, boton){
+    if (!sessionToken) { alert('Disponible al iniciar sesión.'); return; }
+    const textoOriginal = boton ? boton.textContent : '';
+    if (boton) { boton.disabled = true; boton.textContent = 'Abriendo…'; }
+    const restaurar = () => { if (boton) { boton.disabled = false; boton.textContent = textoOriginal; } };
+    google.script.run
+      .withSuccessHandler(r => { restaurar(); abrirPdf(r.nombre, r.base64); })
+      .withFailureHandler(err => { restaurar(); alert('No se pudo abrir el PDF: ' + err.message); })
+      .solicitudes_obtenerAdjunto(sessionToken, item);
+  }
+
+  function abrirPdf(nombre, base64){
+    const binario = atob(base64);
+    const bytes = new Uint8Array(binario.length);
+    for (let i = 0; i < binario.length; i++) bytes[i] = binario.charCodeAt(i);
+    const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+    const ventana = window.open(url, '_blank');
+    if (!ventana) { // si el navegador bloquea la ventana nueva, se descarga el archivo
+      const a = document.createElement('a');
+      a.href = url; a.download = nombre;
+      document.body.appendChild(a); a.click(); a.remove();
+      mostrarToast('Se descargó ' + nombre);
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 120000);
+  }
+
+  // ============ CONFIGURACIÓN DE CORREO (conectado a Correo.gs) ============
+  const COR = { cfg: null };
+  const ETIQUETAS_AVISO = { NUEVA_SOLICITUD: 'Solicitud nueva', SOLICITUD_COMPLETADA: 'Solicitud completada' };
+
+  function corCargar(rellenarAjustes){
+    const tabla = itId('corContactos');
+    const fila = (texto, color) => '<tr><td colspan="5" style="padding:12px 6px;color:' + color + ';text-transform:none;">' + texto + '</td></tr>';
+    if (!sessionToken) { tabla.innerHTML = fila('Disponible al iniciar sesión.', 'var(--ink-soft)'); itId('corEstado').innerHTML = ''; return; }
+    tabla.innerHTML = fila('Cargando…', 'var(--ink-soft)');
+    google.script.run
+      .withSuccessHandler(cfg => { COR.cfg = cfg; corPintar(rellenarAjustes); })
+      .withFailureHandler(err => { tabla.innerHTML = fila('No se pudo cargar: ' + esc(err.message), 'var(--warn)'); })
+      .correo_obtenerConfiguracion(sessionToken);
+  }
+
+  function corPintar(rellenarAjustes){
+    const c = COR.cfg;
+    if (rellenarAjustes) {
+      itId('corActivo').checked = c.envioActivo;
+      itId('corRemitente').value = c.remitente;
+      itId('corResponderA').value = c.responderA;
+    }
+    const activos = c.contactos.filter(x => x.ESTADO === 'Activo').length;
+    const pill = c.envioActivo
+      ? '<span class="etapa etapa-resuelto">Envío activado</span>'
+      : '<span class="etapa etapa-pendiente">Envío desactivado</span>';
+    const aviso = c.envioActivo && !activos
+      ? '<div style="margin-top:8px;color:var(--warn);">Hay envío activado pero ningún contacto activo: nadie recibirá avisos.</div>' : '';
+    itId('corEstado').innerHTML =
+      '<div style="font-size:12.5px;line-height:1.9;">' + pill + '<br>' +
+      'Los correos salen desde: <b style="text-transform:none;">' + esc(c.cuentaEnvio || 'no se pudo determinar la cuenta') + '</b><br>' +
+      'Correos que quedan hoy en esa cuenta: <b>' + (c.cuotaRestante == null ? '—' : c.cuotaRestante) + '</b>' + aviso + '</div>';
+
+    const tabla = itId('corContactos');
+    if (!c.contactos.length) {
+      tabla.innerHTML = '<tr><td colspan="5" style="padding:12px 6px;color:var(--ink-soft);text-transform:none;">Todavía no hay contactos. Agrega el primero con "+ Nuevo contacto".</td></tr>';
+      return;
+    }
+    const td = 'padding:10px 6px;';
+    tabla.innerHTML = c.contactos.map((x, i) => {
+      const activo = x.ESTADO === 'Activo';
+      const avisos = x.EVENTOS.map(e => '<span class="etapa">' + esc(ETIQUETAS_AVISO[e] || e) + '</span>').join(' ');
+      return '<tr style="border-bottom:1px solid var(--line);">' +
+        '<td style="' + td + '">' + esc(x.NOMBRE) + '</td>' +
+        '<td style="' + td + 'text-transform:none;">' + esc(x.CORREO) + '</td>' +
+        '<td style="' + td + '">' + avisos + '</td>' +
+        '<td style="' + td + '">' + (activo ? '<span class="etapa etapa-resuelto">Activo</span>' : '<span class="etapa">Inactivo</span>') + '</td>' +
+        '<td style="' + td + 'white-space:nowrap;text-transform:none;">' +
+          '<button class="btn btn-ghost btn-sm" onclick="corEditar(' + i + ')">Editar</button> ' +
+          '<button class="btn btn-ghost btn-sm" onclick="corPrueba(' + i + ', this)">Enviar prueba</button> ' +
+          (activo ? '<button class="btn btn-ghost btn-sm" onclick="corCambiarEstado(' + i + ')">Inactivar</button>'
+                  : '<button class="btn btn-gold btn-sm" onclick="corCambiarEstado(' + i + ')">Activar</button>') +
+        '</td></tr>';
+    }).join('');
+  }
+
+  function corGuardarAjustes(){
+    const remitente = itId('corRemitente').value.trim();
+    const activo = itId('corActivo').checked;
+    if (!sessionToken) { alert('Disponible al iniciar sesión.'); return; }
+    if (!remitente) { alert('Escribe el nombre que verán quienes reciban los correos.'); return; }
+    const sinContactos = !COR.cfg || !COR.cfg.contactos.some(x => x.ESTADO === 'Activo');
+    if (activo && sinContactos && !confirm('No hay contactos activos: nadie recibirá los avisos. ¿Activar el envío de todos modos?')) return;
+    google.script.run
+      .withSuccessHandler(() => { mostrarToast('Ajustes guardados'); corCargar(true); })
+      .withFailureHandler(err => alert('No se pudieron guardar los ajustes: ' + err.message))
+      .correo_guardarAjustes(sessionToken, { envioActivo: activo, remitente: remitente, responderA: itId('corResponderA').value.trim() });
+  }
+
+  function camposContacto(c){
+    return [
+      { id: 'nombre', tipo: 'text', label: 'Nombre', valor: c ? c.NOMBRE : '', placeholder: 'Ej. JEFE DE INFORMÁTICA' },
+      { id: 'correo', tipo: 'text', label: 'Correo', valor: c ? c.CORREO : '', placeholder: 'nombre@gmail.com', sinMayus: true },
+      { tipo: 'nota', texto: 'Avisos que recibirá este contacto:' }
+    ].concat(COR.cfg.eventos.map(e => ({ id: 'ev_' + e.codigo, tipo: 'checkbox', label: e.descripcion, valor: c ? c.EVENTOS.indexOf(e.codigo) !== -1 : false })));
+  }
+
+  function corLeerContacto(v){
+    return { nombre: v.nombre, correo: v.correo, eventos: COR.cfg.eventos.filter(e => v['ev_' + e.codigo]).map(e => e.codigo) };
+  }
+
+  function corValidar(d){
+    if (!d.nombre) return 'Escribe el nombre del contacto.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.correo)) return 'El correo no es válido.';
+    if (!d.eventos.length) return 'Elige al menos un aviso para este contacto.';
+    return null;
+  }
+
+  function corEjecutar(nombreFuncion, args, mensajeOk){
+    document.getElementById('modalMantGuardar').disabled = true;
+    google.script.run
+      .withSuccessHandler(() => { cerrarModal(); mostrarToast(mensajeOk); corCargar(false); })
+      .withFailureHandler(err => modalError(err.message))
+      [nombreFuncion](...args);
+  }
+
+  function corNuevo(){
+    if (!COR.cfg) return;
+    abrirModal('Nuevo contacto', camposContacto(null), v => {
+      const d = corLeerContacto(v), error = corValidar(d);
+      if (error) return modalError(error);
+      corEjecutar('correo_crearContacto', [sessionToken, d], 'Contacto creado');
+    });
+  }
+
+  function corEditar(i){
+    const c = COR.cfg.contactos[i];
+    abrirModal('Editar contacto', camposContacto(c), v => {
+      const d = corLeerContacto(v), error = corValidar(d);
+      if (error) return modalError(error);
+      corEjecutar('correo_editarContacto', [sessionToken, c.ID_CONTACTO, d], 'Cambios guardados');
+    });
+  }
+
+  function corCambiarEstado(i){
+    const c = COR.cfg.contactos[i];
+    const nuevo = c.ESTADO === 'Activo' ? 'Inactivo' : 'Activo';
+    if (!confirm(nuevo === 'Inactivo' ? '¿Inactivar a "' + c.NOMBRE + '"? Dejará de recibir avisos.' : '¿Activar a "' + c.NOMBRE + '"?')) return;
+    google.script.run
+      .withSuccessHandler(() => { mostrarToast('Contacto ' + (nuevo === 'Activo' ? 'activado' : 'inactivado')); corCargar(false); })
+      .withFailureHandler(err => alert('No se pudo cambiar el estado: ' + err.message))
+      .correo_cambiarEstadoContacto(sessionToken, c.ID_CONTACTO, nuevo);
+  }
+
+  function corPrueba(i, boton){
+    const c = COR.cfg.contactos[i];
+    const texto = boton.textContent;
+    boton.disabled = true; boton.textContent = 'Enviando…';
+    const restaurar = () => { boton.disabled = false; boton.textContent = texto; };
+    google.script.run
+      .withSuccessHandler(r => { restaurar(); mostrarToast('Correo de prueba enviado a ' + r.destino + '. Revisa su bandeja (y la carpeta de spam).', 6000); })
+      .withFailureHandler(err => { restaurar(); alert(err.message); })
+      .correo_enviarPrueba(sessionToken, c.ID_CONTACTO);
   }
 
   // Todo campo de texto se convierte a MAYÚSCULA mientras se escribe,
