@@ -97,6 +97,7 @@ function config_crearHojasYCampos() {
   });
 
   config_precargarCatalogos_();
+  correo_asegurarHojas_(); // Correo_Contactos y Correo_Configuracion (envío desactivado hasta que se configure)
   return resultado;
 }
 
