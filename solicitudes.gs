@@ -6,20 +6,76 @@
 var HOJA_SOLICITUDES = 'Solicitudes';
 var HOJA_DETALLE_ACCESOS = 'Detalle_Accesos';
 
-/** true si el DNI ya tiene una solicitud registrada (para el aviso en tiempo real del formulario). */
+/**
+ * Revisa si un DNI se puede usar en una solicitud nueva. Se llama apenas se escribe el DNI en el formulario.
+ * Devuelve { dni, existe, mensaje, reemplaza }:
+ *  - existe: true si el DNI ya tiene una solicitud (no se puede repetir).
+ *  - reemplaza: true si lo único que hay es un borrador propio sin notificar (se reemplaza al registrar).
+ */
 function solicitudes_validarDni(token, dni) {
-  login_validarToken_(token);
-  var dniLimpio = util_normalizarDni(dni);
-  var existe = util_leerComoObjetos(HOJA_SOLICITUDES).some(function (s) {
-    return util_normalizarDni(s.DNI) === dniLimpio;
+  var sesion = login_exigirArea_(token, 'Administración');
+  var dniLimpio = util_dniTexto(dni);
+  var estado = solicitudes_estadoDni_(dniLimpio, sesion);
+  return { dni: dniLimpio, existe: !!estado.bloqueo, mensaje: estado.bloqueo, reemplaza: estado.borradores.length > 0 };
+}
+
+/**
+ * Busca las solicitudes que ya usan ese DNI. Un DNI no puede repetirse, con una sola excepción: un
+ * borrador PROPIO sin notificar (una solicitud que esta misma persona dejó a medias, por ejemplo por un
+ * corte de conexión), que se reemplaza por la nueva en vez de bloquear el DNI para siempre.
+ * Los DNI se comparan con 8 dígitos: Sheets puede haber guardado 07452136 como el número 7452136.
+ * @return {{bloqueo: string, borradores: Object[]}}
+ */
+function solicitudes_estadoDni_(dni, sesion) {
+  var yo = String(sesion.usuario).toLowerCase();
+  var resultado = { bloqueo: '', borradores: [] };
+  util_leerComoObjetos(HOJA_SOLICITUDES).forEach(function (s) {
+    if (util_dniTexto(s.DNI) !== dni) return;
+    var esMia = String(s.CREADO_POR || '').toLowerCase() === yo;
+    if (esMia && s.NOTIFICADO !== 'SI') { resultado.borradores.push(s); return; }
+    if (!resultado.bloqueo) {
+      resultado.bloqueo = esMia
+        ? 'Ya registraste una solicitud para este DNI (' + s.RESOLUCION + '). Un DNI no puede repetirse.'
+        : 'Este DNI ya tiene una solicitud registrada. Un DNI no puede repetirse.';
+    }
   });
-  return { dni: dniLimpio, existe: existe };
+  return resultado;
+}
+
+/**
+ * Falla si el DNI ya está en uso. Con reemplazar = true, además borra los borradores propios sin notificar
+ * (y su PDF) para que la solicitud nueva ocupe su lugar. Devuelve el mayor ITEM borrado (0 si no borró nada):
+ * quien llama lo usa para que la solicitud nueva NO reutilice ese número y no se mezclen sus historiales.
+ */
+function solicitudes_exigirDniLibre_(dni, sesion, reemplazar) {
+  var estado = solicitudes_estadoDni_(dni, sesion);
+  if (estado.bloqueo) throw new Error(estado.bloqueo);
+  if (!reemplazar || !estado.borradores.length) return 0;
+
+  var hoja = util_obtenerHoja(HOJA_SOLICITUDES);
+  var mayorBorrado = 0;
+  estado.borradores.sort(function (a, b) { return b._fila - a._fila; }).forEach(function (borrador) {
+    hoja.deleteRow(borrador._fila); // de abajo hacia arriba, para no mover las filas que faltan
+    mayorBorrado = Math.max(mayorBorrado, Number(borrador.ITEM) || 0);
+    solicitudes_borrarAdjunto_(borrador.ADJUNTO_URL);
+    auditoria_registrar(sesion.usuario, 'Solicitud sin notificar reemplazada por una nueva', 'ITEM ' + borrador.ITEM, sesion.area, 'DNI ' + dni);
+  });
+  return mayorBorrado;
+}
+
+/** La columna DNI se guarda como texto: si no, Sheets convierte 07452136 en el número 7452136 y pierde el cero. */
+function solicitudes_asegurarFormatoDni_() {
+  var hoja = util_obtenerHoja(HOJA_SOLICITUDES);
+  var col = hoja.getRange(1, 1, 1, Math.max(hoja.getLastColumn(), 1)).getValues()[0].indexOf('DNI') + 1;
+  if (col < 1) return;
+  if (hoja.getRange(2, col).getNumberFormat() === '@') return;
+  hoja.getRange(2, col, Math.max(hoja.getMaxRows() - 1, 1), 1).setNumberFormat('@');
 }
 
 /**
  * Crea una solicitud en estado "borrador" (aún no notificada).
  * @param {Object} datos { resolucion, fechaResolucion, sede, dni, apellidos, nombres, perfil, adjunto: { nombre, base64 } }
- * El PDF de la resolución es obligatorio: se valida, se guarda en la carpeta restringida de Drive y su enlace
+ * El DNI no puede repetirse (ver solicitudes_estadoDni_). El PDF de la resolución es obligatorio: se valida, se guarda en la carpeta restringida de Drive y su enlace
  * queda en ADJUNTO_URL. Si algo falla después de guardarlo, el archivo se manda a la papelera (no quedan huérfanos).
  */
 function solicitudes_crear(token, datos) {
@@ -30,11 +86,16 @@ function solicitudes_crear(token, datos) {
   }
   var dni = util_normalizarDni(datos.dni);
   if (dni.length !== 8) throw new Error('El DNI debe tener 8 dígitos.');
+  solicitudes_exigirDniLibre_(dni, sesion, false); // aviso rápido, antes de subir el PDF
 
   var adjuntoUrl = solicitudes_guardarAdjunto_(datos.adjunto, util_mayus(datos.resolucion), dni);
+  var candado = LockService.getScriptLock(); // una solicitud a la vez: evita DNI repetidos y números de ITEM repetidos
   try {
+    candado.waitLock(30000);
+    var itemBorrado = solicitudes_exigirDniLibre_(dni, sesion, true); // comprobación definitiva (y reemplazo del borrador propio)
+    solicitudes_asegurarFormatoDni_();
     var hoja = util_obtenerHoja(HOJA_SOLICITUDES);
-    var id = util_siguienteId(HOJA_SOLICITUDES);
+    var id = Math.max(util_siguienteId(HOJA_SOLICITUDES), itemBorrado + 1); // nunca reutiliza el número de un borrador reemplazado
     var fila = [
       id, util_mayus(datos.resolucion), datos.fechaResolucion, '', adjuntoUrl,
       util_mayus(datos.sede), dni, util_mayus(datos.apellidos), util_mayus(datos.nombres), util_mayus(datos.perfil),
@@ -47,6 +108,8 @@ function solicitudes_crear(token, datos) {
   } catch (error) {
     solicitudes_borrarAdjunto_(adjuntoUrl); // no dejar un PDF suelto si la solicitud no se pudo guardar
     throw error;
+  } finally {
+    if (candado.hasLock()) candado.releaseLock();
   }
 
   auditoria_registrar(sesion.usuario, 'Solicitud creada', 'ITEM ' + id, sesion.area);
@@ -86,18 +149,14 @@ function solicitudes_notificar(token, itemSolicitud, sistemasRequeridos) {
   solicitudes_recalcularAvance_(itemSolicitud);
   auditoria_registrar(sesion.usuario, 'Notificación enviada a Informática', 'ITEM ' + itemSolicitud, sesion.area);
 
-  MailApp.sendEmail({
-    to: 'informatica@pj.gob.pe', // TODO: reemplazar por el correo real del área
-    subject: 'Nueva solicitud de acceso — ' + solicitud.RESOLUCION,
-    body: 'Se registró una nueva solicitud de acceso.\n\n' +
-      'Resolución: ' + solicitud.RESOLUCION + '\n' +
-      'DNI: ' + solicitud.DNI + '\n' +
-      'Nombres: ' + solicitud.NOMBRES + ' ' + solicitud.APELLIDOS + '\n' +
-      'Accesos requeridos: ' + sistemasRequeridos.join(', ') + '\n\n' +
-      'Ingresa al sistema para gestionarla.'
+  // El aviso sale a los contactos configurados en "Configuración de correo". Si no sale, la solicitud
+  // igual queda registrada (Informática la ve en su bandeja) y la pantalla recibe el motivo.
+  var correo = correo_enviarEvento_('NUEVA_SOLICITUD', {
+    usuario: sesion.usuario, area: sesion.area, item: itemSolicitud,
+    resolucion: solicitud.RESOLUCION, sede: solicitud.SEDE, accesos: sistemasRequeridos.length
   });
 
-  return { ok: true };
+  return { ok: true, correo: correo };
 }
 
 /** Lista las solicitudes que registró la persona que consulta (Administración), con filtros opcionales. */
@@ -149,6 +208,13 @@ function solicitudes_recalcularAvance_(itemSolicitud) {
   if (!solicitud) return;
   hoja.getRange(solicitud._fila, 11).setValue(avance);        // AVANCE_%
   hoja.getRange(solicitud._fila, 12).setValue(estadoGeneral); // ESTADO_GENERAL
+
+  // solicitud.ESTADO_GENERAL todavía tiene el valor ANTERIOR (se leyó antes de escribir): solo avisa al pasar a Completado
+  if (estadoGeneral === 'Completado' && solicitud.ESTADO_GENERAL !== 'Completado') {
+    correo_enviarEvento_('SOLICITUD_COMPLETADA', {
+      usuario: 'sistema', area: 'Sistema', item: itemSolicitud, resolucion: solicitud.RESOLUCION, sede: solicitud.SEDE
+    });
+  }
 }
 
 /**
@@ -255,7 +321,7 @@ function solicitudes_porcentajesPorItem_(porcentajes) {
 
 // ---------- PDF DE LA RESOLUCIÓN (adjunto) ----------
 
-var ADJUNTO_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+var ADJUNTO_MAX_BYTES = 20 * 1024 * 1024; // 20 MB
 
 /**
  * Carpeta restringida donde se guardan los PDF de las resoluciones. Si todavía no existe, se crea sola
